@@ -92,7 +92,7 @@ export default function CheckoutPage() {
               para comenzar tu historia.
             </p>
             <Link href="/coleccion/soberbia" className="cta-btn">
-              Explorar Soberbia
+              Descubrir el Brillo de Soberbia
             </Link>
           </div>
         </main>

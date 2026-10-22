@@ -76,7 +76,7 @@ export default function CartDrawer() {
                 className="cta-btn"
                 onClick={close}
               >
-                Explorar Soberbia
+                Descubrir el Brillo de Soberbia
               </Link>
             </div>
           ) : (

@@ -331,7 +331,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
               <div className="pdp-actions">
                 {producto.modoAcceso === "disponible" ? (
                   <button className="pdp-add-btn" onClick={handleAddToCart}>
-                    Añadir a mi Historia
+                    Tejer esta Historia en mi Piel
                   </button>
                 ) : producto.modoAcceso === "circulo" ? (
                   <>

@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { PECADOS } from "@/lib/pecados";
 
 export default function Home() {
+  const [modalOpen, setModalOpen] = useState(false);
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
@@ -43,18 +45,19 @@ export default function Home() {
                   style={{ objectFit: "contain" }}
                 />
               </div>
+              <h1 className="hero-title">ROMANY MELAN</h1>
               <p className="hero-subtitle">
-                Historias vivas que se llevan en la piel.
+                Historias tejidas para llevar en la piel.
               </p>
             </div>
             <p className="hero-text">
               Romany Melan celebra la belleza en su estado más puro y orgánico,
               rindiendo culto a la fuerza de la naturaleza. Cada pieza es un
               encuentro atemporal donde el arte, la piedra y la fibra se entrelazan
-              para contar una historia entre la creación y quien la porta.
+              para contar una historia entre la joya y quien la porta.
             </p>
             <a className="cta-btn" href="#coleccion">
-              Descubrir las Historias
+              Adentrarse en las Historias
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M3.33334 8H12.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M8 3.33334L12.6667 8L8 12.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -129,10 +132,20 @@ export default function Home() {
                           className={`card-badge ${
                             pecado.slug === "soberbia" ? "active" : ""
                           }`}
+                          onClick={
+                            pecado.slug !== "soberbia"
+                              ? () => setModalOpen(true)
+                              : undefined
+                          }
+                          style={
+                            pecado.slug !== "soberbia"
+                              ? { cursor: "pointer" }
+                              : undefined
+                          }
                         >
                           {pecado.slug === "soberbia"
-                            ? "Explorar Soberbia"
-                            : "Próximamente"}
+                            ? "Descubrir el Brillo de Soberbia"
+                            : "Revelar Historia Próximamente"}
                         </span>
                       </footer>
                     </div>
@@ -157,6 +170,48 @@ export default function Home() {
           </div>
         </section>
       </main>
+
+      {modalOpen && (
+        <div
+          className="modal-overlay"
+          onClick={() => setModalOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#fff",
+              padding: "2rem",
+              borderRadius: "8px",
+              maxWidth: "420px",
+              width: "90%",
+              textAlign: "center",
+            }}
+          >
+            <p>Sé el primero en el Círculo en conocer este lanzamiento.</p>
+            <input
+              type="email"
+              placeholder="tu@email.com"
+              style={{ width: "100%", marginTop: "1rem", padding: "0.5rem" }}
+            />
+            <button
+              className="cta-btn"
+              style={{ marginTop: "1rem" }}
+              onClick={() => setModalOpen(false)}
+            >
+              Enviar
+            </button>
+          </div>
+        </div>
+      )}
 
       <SiteFooter />
     </>
