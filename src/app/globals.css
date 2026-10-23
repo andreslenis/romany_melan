@@ -337,6 +337,7 @@ button {
 }
 
 .author-image {
+  position: relative;
   aspect-ratio: 4 / 5;
   width: 100%;
   background: linear-gradient(160deg, rgba(17, 17, 17, 0.04) 0%, rgba(212, 175, 55, 0.08) 100%);

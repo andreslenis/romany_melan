@@ -6,6 +6,7 @@ import Image from "next/image";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+
 import { useCart } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
 import { lineasDe, productoPorSlug } from "@/data/productos";

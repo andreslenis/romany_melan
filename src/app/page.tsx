@@ -50,6 +50,7 @@ export default function Home() {
                 Historias tejidas para llevar en la piel.
               </p>
             </div>
+            <h3 className="section-subtitle">— EL ORIGEN Y LA MATERIA</h3>
             <p className="hero-text">
               Romany Melan celebra la belleza en su estado más puro y orgánico,
               rindiendo culto a la fuerza de la naturaleza. Cada pieza es un
@@ -69,13 +70,15 @@ export default function Home() {
         <section className="author-section" id="autora">
           <div className="container author-grid">
             <div className="author-image">
-              <span>
-                Fotografía editorial
-                <br />
-                de la creadora
-              </span>
+              <Image
+                src="/resources/autora/melany_roman.jpg"
+                alt="Melany Roman, creadora de Romany Melan"
+                fill
+                style={{ objectFit: "cover" }}
+              />
             </div>
             <div className="author-content fade-in">
+              <h3 className="section-subtitle">— LA CREADORA</h3>
               <h2 className="section-title">La Autora &amp; El Origen</h2>
             <div className="author-text">
               <p>

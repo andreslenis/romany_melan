@@ -52,9 +52,13 @@ export default function CartDrawer() {
             <p className="cart-drawer-subtitle">
               {count === 0
                 ? "Aún no hay piezas en tu historia."
-                : `${count} ${count === 1 ? "pieza" : "piezas"} seleccionada${
-                    count === 1 ? "" : "s"
-                  }`}
+                : `${count} ${count === 1 ? "pieza" : "piezas"} seleccionada${count === 1 ? "" : "s"}`}
+            </p>
+            <p className="cart-drawer-subtitle">
+              Estás a un paso de llevar una historia hecha a mano.
+            </p>
+            <p className="cart-drawer-benefit">
+              ¡Tu pedido incluye Empaque de Lujo y Certificado de Garantía sin costo adicional!
             </p>
           </div>
           <button className="cart-drawer-close" onClick={close} aria-label="Cerrar carrito">
