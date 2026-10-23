@@ -57,9 +57,7 @@ export default function CartDrawer() {
             <p className="cart-drawer-subtitle">
               Estás a un paso de llevar una historia hecha a mano.
             </p>
-            <p className="cart-drawer-benefit">
-              ¡Tu pedido incluye Empaque de Lujo y Certificado de Garantía sin costo adicional!
-            </p>
+
           </div>
           <button className="cart-drawer-close" onClick={close} aria-label="Cerrar carrito">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

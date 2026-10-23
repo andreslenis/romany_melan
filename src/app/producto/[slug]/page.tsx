@@ -236,9 +236,11 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                         <span className="pdp-line-tab-material">
                           {linea.material}
                         </span>
-                        <span className="pdp-line-tab-price">
-                          {linea.precioFormato}
-                        </span>
+{perfil && (
+                          <span className="pdp-line-tab-price">
+                            {linea.precioFormato}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
