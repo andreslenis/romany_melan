@@ -69,3 +69,16 @@ create table if not exists perfiles (
   proveedor text,
   created_at timestamptz default now()
 );
+
+-- RLS policies
+alter table colecciones enable row level security;
+alter table productos enable row level security;
+alter table pedidos enable row level security;
+alter table perfiles enable row level security;
+
+do $$ begin create policy "anon_all_colecciones" on colecciones for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "anon_all_productos" on productos for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "anon_all_pedidos" on pedidos for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "anon_all_perfiles" on perfiles for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
+insert into storage.buckets (id, name, public) values ('productos', 'productos', true) on conflict (id) do nothing;
+do $$ begin create policy "anon_storage_productos" on storage.objects for all to anon using (bucket_id = 'productos') with check (bucket_id = 'productos'); exception when duplicate_object then null; end $$;

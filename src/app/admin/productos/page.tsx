@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import AdminGuard from "@/components/admin/AdminGuard";
 import { supabase } from "@/lib/supabase/client";
+import Link from "next/link";
 
 type Producto = { 
   id: string; 
@@ -30,8 +31,11 @@ export default function AdminProductos() {
     stock: 0,
     historia: "",
     descripcion_corta: "",
-    activo: true
+    activo: true,
+    imagenes: [] as string[]
   });
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = async () => {
@@ -58,6 +62,16 @@ export default function AdminProductos() {
 
   const guardar = async () => {
     try {
+      // upload selected files
+      const uploadedUrls: string[] = [];
+      for (const file of selectedFiles) {
+        const path = `${Date.now()}-${file.name}`;
+        const { error: upErr } = await supabase.storage.from('productos').upload(path, file);
+        if (upErr) { alert('Error subiendo imagen: ' + upErr.message); return; }
+        const { data: pub } = supabase.storage.from('productos').getPublicUrl(path);
+        uploadedUrls.push(pub.publicUrl);
+      }
+      const imagenes = [...form.imagenes, ...uploadedUrls];
       const payload = {
         nombre: form.nombre,
         slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
@@ -67,16 +81,20 @@ export default function AdminProductos() {
         historia_narrativa: form.historia,
         descripcion_corta: form.descripcion_corta,
         activo: form.activo,
-        imagenes: []
+        imagenes
       };
       if (editingId) {
-        const { error } = await supabase.from('productos').update(payload).eq('id', editingId);
+        const { data, error } = await supabase.from('productos').update(payload).eq('id', editingId).select();
         if (error) { alert('Error al actualizar: ' + error.message); return; }
+        if (data?.[0]) setProductos((prev) => prev.map((p) => (p.id === editingId ? (data[0] as Producto) : p)));
       } else {
-        const { error } = await supabase.from('productos').insert(payload);
+        const { data, error } = await supabase.from('productos').insert(payload).select();
         if (error) { alert('Error al crear: ' + error.message); return; }
+        if (data?.[0]) setProductos((prev) => [data[0] as Producto, ...prev]);
       }
-      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true });
+      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [] });
+      setSelectedFiles([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       setEditingId(null);
       load();
       alert('Producto guardado correctamente');
@@ -96,7 +114,8 @@ export default function AdminProductos() {
       stock: p.stock_disponible || 0,
       historia: p.historia_narrativa || '',
       descripcion_corta: p.descripcion_corta || '',
-      activo: p.activo !== false
+      activo: p.activo !== false,
+      imagenes: Array.isArray(p.imagenes) ? (p.imagenes as string[]) : []
     });
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
   };
@@ -117,7 +136,10 @@ export default function AdminProductos() {
       <main className="container" style={{ padding: "2rem 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
           <h1>Gestor de Productos / Inventario</h1>
-          <button className="cta-btn" onClick={() => { setEditingId(null); setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true }); }}>+ Nuevo Producto</button>
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <Link href="/admin/dashboard" className="cta-btn">Volver</Link>
+            <button className="cta-btn" onClick={() => { setEditingId(null); setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [] }); setSelectedFiles([]); }}>+ Nuevo Producto</button>
+          </div>
         </div>
         
         <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", overflow: "hidden" }}>
@@ -164,8 +186,18 @@ export default function AdminProductos() {
               <option value="origen">Línea Origen</option>
               <option value="singular">Línea Singular</option>
             </select>
-            <input className="form-input" type="number" placeholder="Precio COP" value={form.precio} onChange={(e) => setForm({ ...form, precio: Number(e.target.value) })} />
-            <input className="form-input" type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} />
+            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              <span>Precio COP</span>
+              <input className="form-input" type="number" placeholder="Precio COP" value={form.precio} onChange={(e) => setForm({ ...form, precio: Number(e.target.value) })} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+              <span>Stock</span>
+              <input className="form-input" type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem", gridColumn: "1 / -1" }}>
+              <span>Imágenes</span>
+              <input ref={fileInputRef} className="form-input" type="file" accept="image/*" multiple onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))} />
+            </label>
           </div>
           <textarea className="form-input form-textarea" placeholder="Descripción corta" value={form.descripcion_corta} onChange={(e) => setForm({ ...form, descripcion_corta: e.target.value })} style={{ marginTop: "1rem" }} />
           <textarea className="form-input form-textarea" placeholder="Narrativa / Historia" value={form.historia} onChange={(e) => setForm({ ...form, historia: e.target.value })} style={{ marginTop: "1rem" }} />
