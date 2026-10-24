@@ -2,55 +2,66 @@
 
 import { useEffect, useState, useRef } from "react";
 import AdminGuard from "@/components/admin/AdminGuard";
-import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase/client";
+import { COLORES_HILO } from "@/lib/pecados";
 
-type Producto = { 
-  id: string; 
-  nombre: string; 
+type Producto = {
+  id: string;
+  nombre: string;
   slug: string;
   coleccion_id?: string;
-  linea?: string; 
-  precio_cop?: number; 
-  stock_disponible?: number; 
+  linea?: string;
+  precio_cop?: number;
+  stock_disponible?: number;
   activo?: boolean;
   descripcion_corta?: string;
   historia_narrativa?: string;
   imagenes?: unknown;
+  especificaciones?: { material?: string; componentes?: string; piedra?: string };
+  tallas?: unknown;
+  colores_hilo?: unknown;
 };
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ 
-    nombre: "", 
+  const [form, setForm] = useState({
+    nombre: "",
     slug: "",
-    coleccion: "Soberbia", 
-    linea: "origen", 
-    precio: 0, 
+    coleccion: "Soberbia",
+    linea: "origen",
+    precio: 0,
     stock: 0,
     historia: "",
     descripcion_corta: "",
     activo: true,
-    imagenes: [] as string[]
+    imagenes: [] as string[],
+    tipoHilo: "",
+    componentes: "",
+    tamanoGema: "",
+    requiereTalla: false,
+    tallas: "",
+    coloresHilo: [] as string[]
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from('productos').select('*').order('nombre', { ascending: true });
+      const { data, error } = await supabase.from("productos").select("*").order("nombre", { ascending: true });
       if (error) {
-        console.error('Supabase error:', error.message, error.details);
-        alert('Error al cargar productos: ' + error.message);
+        console.error("Supabase error:", error.message, error.details);
+        alert("Error al cargar productos: " + error.message);
       } else {
         setProductos(data || []);
       }
     } catch (e) {
       console.error(e);
-      alert('Error de conexión');
+      alert("Error de conexión");
     } finally {
       setLoading(false);
     }
@@ -62,44 +73,60 @@ export default function AdminProductos() {
 
   const guardar = async () => {
     try {
-      // upload selected files
       const uploadedUrls: string[] = [];
       for (const file of selectedFiles) {
-        const path = `${Date.now()}-${file.name}`;
-        const { error: upErr } = await supabase.storage.from('productos').upload(path, file);
-        if (upErr) { alert('Error subiendo imagen: ' + upErr.message); return; }
-        const { data: pub } = supabase.storage.from('productos').getPublicUrl(path);
+        const path = Date.now() + "-" + file.name;
+        const { error: upErr } = await supabase.storage.from("productos").upload(path, file);
+        if (upErr) {
+          alert("Error subiendo imagen: " + upErr.message);
+          return;
+        }
+        const { data: pub } = supabase.storage.from("productos").getPublicUrl(path);
         uploadedUrls.push(pub.publicUrl);
       }
       const imagenes = [...form.imagenes, ...uploadedUrls];
       const payload = {
         nombre: form.nombre,
-        slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
-        linea: form.linea === 'singular' ? 'SINGULAR' : 'ORIGEN',
+        slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+        linea: form.linea === "singular" ? "SINGULAR" : "ORIGEN",
         precio_cop: Number(form.precio) || 0,
         stock_disponible: Number(form.stock) || 0,
         historia_narrativa: form.historia,
         descripcion_corta: form.descripcion_corta,
         activo: form.activo,
-        imagenes
+        imagenes,
+        especificaciones: {
+          material: form.tipoHilo,
+          componentes: form.componentes,
+          piedra: form.tamanoGema
+        },
+        tallas: form.requiereTalla ? form.tallas.split(",").map((t) => t.trim()).filter(Boolean) : [],
+        admite_color_hilo: form.linea === "origen",
+        colores_hilo: form.linea === "origen" ? form.coloresHilo : []
       };
       if (editingId) {
-        const { data, error } = await supabase.from('productos').update(payload).eq('id', editingId).select();
-        if (error) { alert('Error al actualizar: ' + error.message); return; }
-        if (data?.[0]) setProductos((prev) => prev.map((p) => (p.id === editingId ? (data[0] as Producto) : p)));
+        const { data, error } = await supabase.from("productos").update(payload).eq("id", editingId).select();
+        if (error) {
+          alert("Error al actualizar: " + error.message);
+          return;
+        }
+        if (data && data[0]) setProductos((prev) => prev.map((p) => (p.id === editingId ? (data[0] as Producto) : p)));
       } else {
-        const { data, error } = await supabase.from('productos').insert(payload).select();
-        if (error) { alert('Error al crear: ' + error.message); return; }
-        if (data?.[0]) setProductos((prev) => [data[0] as Producto, ...prev]);
+        const { data, error } = await supabase.from("productos").insert(payload).select();
+        if (error) {
+          alert("Error al crear: " + error.message);
+          return;
+        }
+        if (data && data[0]) setProductos((prev) => [data[0] as Producto, ...prev]);
       }
-      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [] });
+      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] });
       setSelectedFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setEditingId(null);
       load();
-      alert('Producto guardado correctamente');
+      alert("Producto guardado correctamente");
     } catch (e) {
-      alert('Error: ' + (e instanceof Error ? e.message : String(e)));
+      alert("Error: " + (e instanceof Error ? e.message : String(e)));
     }
   };
 
@@ -107,27 +134,36 @@ export default function AdminProductos() {
     setEditingId(p.id);
     setForm({
       nombre: p.nombre,
-      slug: p.slug || '',
+      slug: p.slug || "",
       coleccion: "Soberbia",
-      linea: p.linea === 'SINGULAR' ? 'singular' : 'origen',
+      linea: p.linea === "SINGULAR" ? "singular" : "origen",
       precio: p.precio_cop || 0,
       stock: p.stock_disponible || 0,
-      historia: p.historia_narrativa || '',
-      descripcion_corta: p.descripcion_corta || '',
+      historia: p.historia_narrativa || "",
+      descripcion_corta: p.descripcion_corta || "",
       activo: p.activo !== false,
-      imagenes: Array.isArray(p.imagenes) ? (p.imagenes as string[]) : []
+      imagenes: Array.isArray(p.imagenes) ? (p.imagenes as string[]) : [],
+      tipoHilo: String((p.especificaciones && p.especificaciones.material) || ""),
+      componentes: String((p.especificaciones && p.especificaciones.componentes) || ""),
+      tamanoGema: String((p.especificaciones && p.especificaciones.piedra) || ""),
+      requiereTalla: Array.isArray(p.tallas) && (p.tallas as unknown[]).length > 0,
+      tallas: Array.isArray(p.tallas) ? (p.tallas as string[]).join(", ") : "",
+      coloresHilo: Array.isArray(p.colores_hilo) ? (p.colores_hilo as string[]) : []
     });
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   };
 
   const eliminar = async (id: string) => {
-    if (!confirm('¿Eliminar este producto?')) return;
+    if (!confirm("¿Eliminar este producto?")) return;
     try {
-      const { error } = await supabase.from('productos').delete().eq('id', id);
-      if (error) { alert('Error al eliminar: ' + error.message); return; }
+      const { error } = await supabase.from("productos").delete().eq("id", id);
+      if (error) {
+        alert("Error al eliminar: " + error.message);
+        return;
+      }
       load();
     } catch (e) {
-      alert('Error: ' + (e instanceof Error ? e.message : String(e)));
+      alert("Error: " + (e instanceof Error ? e.message : String(e)));
     }
   };
 
@@ -138,10 +174,9 @@ export default function AdminProductos() {
           <h1>Gestor de Productos / Inventario</h1>
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <Link href="/admin/dashboard" className="cta-btn">Volver</Link>
-            <button className="cta-btn" onClick={() => { setEditingId(null); setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [] }); setSelectedFiles([]); }}>+ Nuevo Producto</button>
+            <button className="cta-btn" onClick={() => { setEditingId(null); setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] }); setSelectedFiles([]); }}>+ Nuevo Producto</button>
           </div>
         </div>
-        
         <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", overflow: "hidden" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -163,8 +198,8 @@ export default function AdminProductos() {
                     <div style={{ fontWeight: 500 }}>{p.nombre}</div>
                     <div style={{ fontSize: "0.8rem", color: "rgba(0,0,0,0.5)" }}>{p.slug}</div>
                   </td>
-                  <td style={{ padding: "1rem" }}>{p.linea === 'SINGULAR' ? 'Línea Singular' : 'Línea Origen'}</td>
-                  <td style={{ padding: "1rem", textAlign: "right" }}>${(p.precio_cop || 0).toLocaleString('es-CO')} COP</td>
+                  <td style={{ padding: "1rem" }}>{p.linea === "SINGULAR" ? "Línea Singular" : "Línea Origen"}</td>
+                  <td style={{ padding: "1rem", textAlign: "right" }}>${(p.precio_cop || 0).toLocaleString("es-CO")} COP</td>
                   <td style={{ padding: "1rem", textAlign: "center" }}>{p.stock_disponible || 0}</td>
                   <td style={{ padding: "1rem", textAlign: "center" }}>{p.activo !== false ? "Sí" : "No"}</td>
                   <td style={{ padding: "1rem", textAlign: "right" }}>
@@ -176,7 +211,6 @@ export default function AdminProductos() {
             </tbody>
           </table>
         </div>
-
         <div style={{ marginTop: "2rem", background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", padding: "2rem" }}>
           <h2 style={{ marginBottom: "1.5rem" }}>{editingId ? "Editar Producto" : "Nuevo Producto"}</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1rem" }}>
@@ -201,6 +235,36 @@ export default function AdminProductos() {
           </div>
           <textarea className="form-input form-textarea" placeholder="Descripción corta" value={form.descripcion_corta} onChange={(e) => setForm({ ...form, descripcion_corta: e.target.value })} style={{ marginTop: "1rem" }} />
           <textarea className="form-input form-textarea" placeholder="Narrativa / Historia" value={form.historia} onChange={(e) => setForm({ ...form, historia: e.target.value })} style={{ marginTop: "1rem" }} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: "1rem", marginTop: "1rem" }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}><span>Tipo de hilo</span><input className="form-input" value={form.tipoHilo} onChange={(e) => setForm({ ...form, tipoHilo: e.target.value })} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}><span>Componentes</span><input className="form-input" value={form.componentes} onChange={(e) => setForm({ ...form, componentes: e.target.value })} /></label>
+            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}><span>Tamaño de gema</span><input className="form-input" value={form.tamanoGema} onChange={(e) => setForm({ ...form, tamanoGema: e.target.value })} /></label>
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "1rem" }}>
+            <input type="checkbox" checked={form.requiereTalla} onChange={(e) => setForm({ ...form, requiereTalla: e.target.checked })} />
+            <span>¿Requiere selección de talla?</span>
+          </label>
+          {form.requiereTalla && (
+            <input className="form-input" placeholder="Tallas separadas por coma (S, M, L)" value={form.tallas} onChange={(e) => setForm({ ...form, tallas: e.target.value })} style={{ marginTop: "0.5rem" }} />
+          )}
+          {form.linea === "origen" && (
+            <div style={{ marginTop: "1rem" }}>
+              <p style={{ marginBottom: "0.5rem" }}>Colores de hilo disponibles:</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                {COLORES_HILO.map((c) => (
+                  <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                    <input type="checkbox" checked={form.coloresHilo.includes(c.id)} onChange={(e) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        coloresHilo: e.target.checked ? [...prev.coloresHilo, c.id] : prev.coloresHilo.filter((x) => x !== c.id)
+                      }));
+                    }} />
+                    <span>{c.nombre}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
           <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "1rem" }}>
             <input type="checkbox" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} />
             <span>Producto activo</span>
