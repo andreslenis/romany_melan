@@ -15,7 +15,7 @@ type Producto = {
   activo?: boolean;
   descripcion_corta?: string;
   historia_narrativa?: string;
-  imagenes?: any;
+  imagenes?: unknown;
 };
 
 export default function AdminProductos() {
@@ -80,8 +80,8 @@ export default function AdminProductos() {
       setEditingId(null);
       load();
       alert('Producto guardado correctamente');
-    } catch (e: any) {
-      alert('Error: ' + e.message);
+    } catch (e) {
+      alert('Error: ' + (e instanceof Error ? e.message : String(e)));
     }
   };
 
@@ -107,8 +107,8 @@ export default function AdminProductos() {
       const { error } = await supabase.from('productos').delete().eq('id', id);
       if (error) { alert('Error al eliminar: ' + error.message); return; }
       load();
-    } catch (e: any) {
-      alert('Error: ' + e.message);
+    } catch (e) {
+      alert('Error: ' + (e instanceof Error ? e.message : String(e)));
     }
   };
 

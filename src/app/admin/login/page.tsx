@@ -36,7 +36,7 @@ export default function AdminLogin() {
         localStorage.setItem("admin", "true");
         router.push("/admin/dashboard");
       }
-    } catch (err) {
+    } catch {
       alert("Credenciales inválidas");
     } finally {
       setLoading(false);

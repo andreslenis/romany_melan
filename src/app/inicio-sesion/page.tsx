@@ -8,8 +8,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { usePerfil } from "@/context/ProfileContext";
 
 export default function InicioSesionPage() {
-  const { signInWithGoogle, signInWithApple, signInWithEmail } = usePerfil() as any;
-  const [email, setEmail] = useState("");
+  const { signInWithGoogle, signInWithApple, signInWithEmail } = usePerfil();  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleGoogle = async () => {

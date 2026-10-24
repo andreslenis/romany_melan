@@ -115,13 +115,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     ? [imagenPrincipalVar, ...producto.imagenes.filter((img: string) => img !== imagenPrincipalVar)]
     : [imagenPrincipalVar];
 
-  const variantes = COLORES_HILO.map((opcion) => ({
-    id: opcion.id,
-    nombre: opcion.nombre,
-    hex: opcion.hex,
-    imagen: producto.imagenesPorColor?.[opcion.id],
-  })).filter((variante) => Boolean(variante.imagen));
-
   const handleAddToCart = () => {
     addItem({
       slug: producto.slug,

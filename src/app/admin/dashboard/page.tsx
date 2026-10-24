@@ -7,7 +7,8 @@ export default function AdminDashboard() {
   const logout = async () => {
     try {
       await supabase.auth.signOut();
-    } catch (e) {}
+    } catch {
+    }
     localStorage.removeItem("admin");
     window.location.href="/admin/login";
   };

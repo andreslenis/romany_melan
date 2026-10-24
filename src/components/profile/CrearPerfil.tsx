@@ -51,7 +51,7 @@ const PROVEEDORES: {
 ];
 
 export default function CrearPerfil({ compacto = false }: { compacto?: boolean }) {
-  const { registrar, perfil, signInWithGoogle, signInWithApple } = usePerfil() as any;
+  const { registrar, perfil, signInWithGoogle, signInWithApple } = usePerfil();
   const [proveedor, setProveedor] = useState<Proveedor | null>(null);
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -87,8 +87,8 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
       email: email.trim(),
       telefono: telefono.trim(),
       miembro,
-      proveedor: (proveedor ?? "manual") as Perfil["proveedor"],
-    } as any);
+       proveedor: (proveedor ?? "manual") as Perfil["proveedor"],
+     });
   };
 
   if (perfil) return null;

@@ -161,7 +161,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             });
             return;
           }
-        } catch (e) {
+        } catch {
           // fallback to local
         }
       }
@@ -260,7 +260,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const cerrarSesion = useCallback(async () => {
     try {
       await supabase.auth.signOut();
-    } catch (e) {
+    } catch {
       // ignore
     }
     setPerfil(null);
