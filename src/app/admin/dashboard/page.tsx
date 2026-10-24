@@ -1,8 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { supabase } from "@/lib/supabase/client";
 
 export default function AdminDashboard() {
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
+    localStorage.removeItem("admin");
+    window.location.href="/admin/login";
+  };
+
   return (
     <main className="container">
       <h1>Panel de Gestión de Autor</h1>
@@ -12,7 +21,7 @@ export default function AdminDashboard() {
         <Link href="/admin/pedidos" className="trust-item"><strong>Gestor de Pedidos & Envíos</strong><p>Seguimiento de compras, estados de tejido y guías de transporte.</p></Link>
         <Link href="/admin/clientes" className="trust-item"><strong>CRM de Clientes / Círculo</strong><p>Base de datos de compradores, perfiles creados e historias asignadas.</p></Link>
       </div>
-      <button className="cta-btn" onClick={() => { localStorage.removeItem("admin"); window.location.href="/admin/login"; }} style={{ marginTop:"1rem" }}>Cerrar Sesión</button>
+      <button className="cta-btn" onClick={logout} style={{ marginTop:"1rem" }}>Cerrar Sesión</button>
     </main>
   );
 }

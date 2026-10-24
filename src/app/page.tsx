@@ -45,7 +45,7 @@ export default function Home() {
                   style={{ objectFit: "contain" }}
                 />
               </div>
-              <h1 className="hero-title">ROMANY MELAN</h1>
+              <h1 className="hero-title" style={{ color: "var(--color-accent)" }}>ROMANY MELAN</h1>
               <p className="hero-subtitle">
                 Historias tejidas para llevar en la piel.
               </p>

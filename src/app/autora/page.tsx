@@ -122,7 +122,7 @@ export default function AutoraPage() {
         <section className="author-section" id="la-marca">
           <div className="container author-grid">
             <div className="brand-content fade-in">
-              <h2 className="section-title">Romany Melan</h2>
+                <h2 className="section-title" style={{ color: "var(--color-accent)" }}>Romany Melan</h2>
               <div className="brand-text">
                 <p>
                   Romany Melan celebra la belleza en su estado más puro y

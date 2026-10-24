@@ -258,6 +258,7 @@ button {
   font-size: clamp(2.75rem, 12vw, 7.5rem);
   text-transform: uppercase;
   letter-spacing: clamp(0.15em, 2vw, 0.35em);
+  color: var(--color-accent);
 }
 
 .hero-brand {
@@ -594,7 +595,7 @@ button {
   z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 1rem;
 }
 
@@ -606,6 +607,7 @@ button {
   border-radius: 999px;
   border: 1px solid rgba(17, 17, 17, 0.15);
   background-color: rgba(255, 255, 255, 0.8);
+  text-align: center;
 }
 
 .card-badge.active {
@@ -851,6 +853,7 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   transition: opacity 0.35s ease, transform 0.35s ease;
+  text-align: center;
 }
 
 .product-card:hover .product-card-cta,
@@ -1073,6 +1076,66 @@ button {
   flex-direction: column;
   gap: 0.5rem;
   list-style: none;
+}
+
+.pdp-accordion {
+  border-top: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.pdp-accordion-item {
+  border-bottom: 1px solid rgba(17, 17, 17, 0.08);
+}
+
+.pdp-accordion summary {
+  cursor: pointer;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 1rem 0;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pdp-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.pdp-accordion summary::after {
+  content: '+';
+  font-size: 1.25rem;
+  transition: transform 0.2s ease;
+}
+
+.pdp-accordion details[open] summary::after {
+  content: '-';
+}
+
+.pdp-accordion-content {
+  padding-bottom: 1rem;
+  color: rgba(17, 17, 17, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pdp-accordion-content p {
+  line-height: 1.6;
+}
+
+.pdp-accordion-images {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.pdp-accordion-images img {
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(17, 17, 17, 0.08);
 }
 
 .pdp-narrative {

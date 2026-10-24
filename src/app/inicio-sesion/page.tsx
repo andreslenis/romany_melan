@@ -1,14 +1,28 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-
-export const metadata = {
-  title: "Iniciar Sesión | Romany Melan",
-  description: "Inicia sesión en tu cuenta del Círculo Romany Melan.",
-};
+import { usePerfil } from "@/context/ProfileContext";
 
 export default function InicioSesionPage() {
+  const { signInWithGoogle, signInWithApple, signInWithEmail } = usePerfil() as any;
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleGoogle = async () => {
+    if (signInWithGoogle) await signInWithGoogle();
+  };
+  const handleApple = async () => {
+    if (signInWithApple) await signInWithApple();
+  };
+  const handleEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (signInWithEmail) await signInWithEmail(email, password);
+  };
+
   return (
     <>
       <SiteHeader />
@@ -27,7 +41,7 @@ export default function InicioSesionPage() {
 
           <div className="crear-perfil">
             <div className="auth-buttons">
-              <button type="button" className="auth-btn">
+              <button type="button" className="auth-btn" onClick={handleGoogle}>
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
                   <path
                     fill="#4285F4"
@@ -48,7 +62,7 @@ export default function InicioSesionPage() {
                 </svg>
                 <span>Continuar con Google</span>
               </button>
-              <button type="button" className="auth-btn auth-btn--apple">
+              <button type="button" className="auth-btn auth-btn--apple" onClick={handleApple}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M16.4 12.6c0-2 1.6-3 1.7-3.1-1-1.4-2.4-1.5-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.2 2-1.4 2.4-.4 5.9 1 7.8.7.9 1.5 2 2.5 1.9 1-.1 1.4-.6 2.6-.6 1.2 0 1.5.6 2.6.6 1.1 0 1.7-1 2.4-1.9.7-1.1 1-2.1 1-2.2 0 0-2-1-2-3.9ZM14.4 6.6c.5-.7.9-1.6.8-2.6-.8 0-1.8.6-2.4 1.2-.5.6-1 1.5-.8 2.5.9.1 1.8-.4 2.4-1.1Z" />
                 </svg>
@@ -65,7 +79,7 @@ export default function InicioSesionPage() {
               <span>o inicia sesión con tu correo</span>
             </div>
 
-            <form className="auth-form" noValidate>
+            <form className="auth-form" onSubmit={handleEmail} noValidate>
               <label className="form-field">
                 <span className="form-label">Email</span>
                 <input
@@ -73,6 +87,8 @@ export default function InicioSesionPage() {
                   type="email"
                   placeholder="tu@email.com"
                   autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </label>
               <label className="form-field">
@@ -82,6 +98,8 @@ export default function InicioSesionPage() {
                   type="password"
                   placeholder="••••••••"
                   autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </label>
               <button type="submit" className="pdp-add-btn">

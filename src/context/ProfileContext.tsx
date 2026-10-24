@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { supabase } from "@/lib/supabase/client";
 import { randomId, readStorage, removeStorage, writeStorage } from "@/lib/storage";
 import type {
   CartItem,
@@ -47,7 +48,11 @@ interface ProfileContextValue {
     telefono: string;
     miembro: boolean;
     proveedor?: Perfil["proveedor"];
-  }) => void;
+    password?: string;
+  }) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
   crearPedido: (datos: CrearPedidoInput) => Pedido;
   solicitarEspera: (datos: {
     slug: string;
@@ -77,6 +82,44 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     setPedidos(guardados);
     setSolicitudes(guardadasSolicitudes);
     setHydrated(true);
+
+    // Sync with Supabase auth
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const user = session.user;
+        const perfilFromAuth: Perfil = {
+          nombre: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+          email: user.email || '',
+          telefono: user.user_metadata?.phone || '',
+          miembro: true,
+          desde: new Date().toISOString(),
+          proveedor: user.app_metadata?.provider === 'apple' ? 'apple' : user.app_metadata?.provider === 'google' ? 'google' : 'manual',
+        };
+        setPerfil(perfilFromAuth);
+        writeStorage(PERFIL_KEY, perfilFromAuth);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const user = session.user;
+        const perfilFromAuth: Perfil = {
+          nombre: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+          email: user.email || '',
+          telefono: user.user_metadata?.phone || '',
+          miembro: true,
+          desde: new Date().toISOString(),
+          proveedor: user.app_metadata?.provider === 'apple' ? 'apple' : user.app_metadata?.provider === 'google' ? 'google' : 'manual',
+        };
+        setPerfil(perfilFromAuth);
+        writeStorage(PERFIL_KEY, perfilFromAuth);
+      } else {
+        setPerfil(null);
+        removeStorage(PERFIL_KEY);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -85,13 +128,44 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [perfil, hydrated]);
 
   const registrar = useCallback(
-    (datos: {
+    async (datos: {
       nombre: string;
       email: string;
       telefono: string;
       miembro: boolean;
       proveedor?: Perfil["proveedor"];
+      password?: string;
     }) => {
+      // Try Supabase signup first
+      if (datos.password) {
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email: datos.email,
+            password: datos.password,
+            options: {
+              data: {
+                full_name: datos.nombre,
+                phone: datos.telefono,
+              },
+            },
+          });
+          if (!error && data.user) {
+            // Also save locally
+            setPerfil({
+              nombre: datos.nombre,
+              email: datos.email,
+              telefono: datos.telefono,
+              miembro: datos.miembro,
+              proveedor: datos.proveedor ?? "manual",
+              desde: new Date().toISOString(),
+            });
+            return;
+          }
+        } catch (e) {
+          // fallback to local
+        }
+      }
+
       setPerfil({
         nombre: datos.nombre,
         email: datos.email,
@@ -103,6 +177,40 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const signInWithApple = useCallback(async () => {
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    try {
+      await supabase.auth.signInWithPassword({ email, password });
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   const crearPedido = useCallback((datos: CrearPedidoInput): Pedido => {
     const pedido: Pedido = {
@@ -149,7 +257,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const cerrarSesion = useCallback(() => {
+  const cerrarSesion = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {
+      // ignore
+    }
     setPerfil(null);
     removeStorage(PERFIL_KEY);
   }, []);
@@ -162,6 +275,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       hydrated,
       esMiembro: Boolean(perfil?.miembro),
       registrar,
+      signInWithGoogle,
+      signInWithApple,
+      signInWithEmail,
       crearPedido,
       solicitarEspera,
       cerrarSesion,
@@ -172,6 +288,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       solicitudes,
       hydrated,
       registrar,
+      signInWithGoogle,
+      signInWithApple,
+      signInWithEmail,
       crearPedido,
       solicitarEspera,
       cerrarSesion,

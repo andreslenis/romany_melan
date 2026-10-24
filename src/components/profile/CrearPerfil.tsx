@@ -51,7 +51,7 @@ const PROVEEDORES: {
 ];
 
 export default function CrearPerfil({ compacto = false }: { compacto?: boolean }) {
-  const { registrar, perfil } = usePerfil();
+  const { registrar, perfil, signInWithGoogle, signInWithApple } = usePerfil() as any;
   const [proveedor, setProveedor] = useState<Proveedor | null>(null);
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
@@ -59,12 +59,20 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
   const [miembro, setMiembro] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleProveedor = (id: Proveedor) => {
+  const handleProveedor = async (id: Proveedor) => {
     setProveedor(id);
     setError(null);
+    if (id === "google" && signInWithGoogle) {
+      await signInWithGoogle();
+      return;
+    }
+    if (id === "apple" && signInWithApple) {
+      await signInWithApple();
+      return;
+    }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!nombre.trim()) {
       setError("Ingresa tu nombre completo.");
@@ -74,13 +82,13 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
       setError("Ingresa un correo válido.");
       return;
     }
-    registrar({
+    await registrar({
       nombre: nombre.trim(),
       email: email.trim(),
       telefono: telefono.trim(),
       miembro,
       proveedor: (proveedor ?? "manual") as Perfil["proveedor"],
-    });
+    } as any);
   };
 
   if (perfil) return null;

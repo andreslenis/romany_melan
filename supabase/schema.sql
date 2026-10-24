@@ -25,7 +25,12 @@ create table if not exists productos (
   admite_color_hilo boolean default false,
   stock_disponible integer default 0,
   imagenes jsonb default '[]'::jsonb,
-  activo boolean default true
+  activo boolean default true,
+  especificaciones jsonb,
+  tallas jsonb,
+  badge text,
+  modo_acceso text,
+  insignia text
 );
 
 do $$ begin
@@ -51,5 +56,16 @@ create table if not exists pedidos (
   estado_pago estado_pago_enum default 'PENDIENTE',
   estado_envio estado_envio_enum default 'EN_PREPARACION',
   guia_rastreo text,
+  created_at timestamptz default now()
+);
+
+create table if not exists perfiles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  nombre text,
+  email text,
+  telefono text,
+  miembro boolean default false,
+  proveedor text,
   created_at timestamptz default now()
 );
