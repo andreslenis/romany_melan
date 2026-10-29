@@ -82,7 +82,8 @@ alter table productos enable row level security;
 alter table pedidos enable row level security;
 alter table perfiles enable row level security;
 
-do $$ begin create policy "anon_all_colecciones" on colecciones for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "auth_all_colecciones" on colecciones for all to authenticated using (true) with check (true); exception when duplicate_object then null; end $$;
+do $$ begin create policy "auth_all_productos" on productos for all to authenticated using (true) with check (true); exception when duplicate_object then null; end $$;
 do $$ begin create policy "anon_all_productos" on productos for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
 do $$ begin create policy "anon_all_pedidos" on pedidos for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
 do $$ begin create policy "anon_all_perfiles" on perfiles for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
