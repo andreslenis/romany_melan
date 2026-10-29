@@ -70,7 +70,13 @@ create table if not exists perfiles (
   created_at timestamptz default now()
 );
 
--- RLS policies
+create table if not exists admins (
+  id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'admin',
+  created_at timestamptz default now()
+);
+
+do $$ begin create policy "anon_all_admins" on admins for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
 alter table colecciones enable row level security;
 alter table productos enable row level security;
 alter table pedidos enable row level security;

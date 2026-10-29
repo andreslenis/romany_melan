@@ -1,0 +1,5 @@
+-- Crear usuario admin en Supabase Auth (Dashboard -> Authentication -> Users -> Add user)
+-- Email: admin@romany.com
+-- Password: RomanyAdmin2024!
+-- Luego ejecutar para asignar rol superadmin:
+-- insert into admins (id, role) values ('<USER_ID>', 'superadmin') on conflict (id) do update set role='superadmin';
