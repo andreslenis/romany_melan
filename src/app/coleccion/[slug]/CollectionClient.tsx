@@ -31,10 +31,10 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
     const load = async () => {
       const { data: col } = await supabase.from("colecciones").select("*").ilike("nombre", slug).maybeSingle();
       // fallback: match by slug-ish name lower
-      let c = col;
+      let c = col as Coleccion | null;
       if (!c) {
         const { data: cols } = await supabase.from("colecciones").select("*");
-        c = (cols || []).find((x: any) => String(x.nombre).toLowerCase() === slug.toLowerCase()) || null;
+        c = (cols || []).find((x: Coleccion) => String(x.nombre).toLowerCase() === slug.toLowerCase()) || null;
       }
       setColeccion(c);
       if (c) {
@@ -46,7 +46,7 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
     load();
   }, [slug]);
 
-  const norm = (l: any) => String(l).toLowerCase();
+  const norm = (l: string | number | boolean | null | undefined) => String(l).toLowerCase();
   const productosLinea = productos.filter((p) => norm(p.linea) === linea);
 
   return (

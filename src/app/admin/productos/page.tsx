@@ -74,6 +74,7 @@ export default function AdminProductos() {
 
   useEffect(() => {
     load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const guardar = async () => {

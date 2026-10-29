@@ -7,7 +7,6 @@ import { supabase } from "@/lib/supabase/client";
 export default function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [ok, setOk] = useState(false);
-  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -32,7 +31,6 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
     checkAdmin();
   }, [router]);
 
-  if (checking) return null;
   if (!ok) return null;
   return <>{children}</>;
 }
