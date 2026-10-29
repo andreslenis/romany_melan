@@ -13,22 +13,8 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          const { data: profile } = await supabase
-            .from("admins")
-            .select("role")
-            .eq("id", session.user.id)
-            .maybeSingle();
-       if (profile && (profile.role === "superadmin" || profile.role === "admin")) {
-             setOk(true);
-             return;
-           }
-           // Bootstrap: if no admins exist, make this user superadmin
-           const { count } = await supabase.from("admins").select("*", { count: "exact", head: true });
-           if (count === 0) {
-             await supabase.from("admins").insert({ id: session.user.id, role: "superadmin" });
-             setOk(true);
-             return;
-           }
+          setOk(true);
+          return;
         }
       } catch {
         // ignore
