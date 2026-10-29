@@ -37,15 +37,19 @@ export default function CheckoutPage() {
     [items, subtotal]
   );
 
-  const handleSubmitDatos = useCallback(() => {
+  const handleSubmitDatos = useCallback(async () => {
     if (modo === "miembro") {
-      registrar({
-        nombre: datos.nombre,
-        email: datos.email,
-        telefono: datos.telefono,
-        miembro: true,
-        proveedor: "manual",
-      });
+      try {
+        await registrar({
+          nombre: datos.nombre,
+          email: datos.email,
+          telefono: datos.telefono,
+          miembro: true,
+          proveedor: "manual",
+        });
+      } catch {
+        // El perfil requiere contraseña; el usuario puede crearlo en /crear-perfil
+      }
     }
     setPaso(2);
   }, [modo, datos, registrar]);

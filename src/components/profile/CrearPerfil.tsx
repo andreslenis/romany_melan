@@ -56,6 +56,7 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
+  const [password, setPassword] = useState("");
   const [miembro, setMiembro] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,13 +83,18 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
       setError("Ingresa un correo válido.");
       return;
     }
+    if (!password || password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
     await registrar({
       nombre: nombre.trim(),
       email: email.trim(),
       telefono: telefono.trim(),
       miembro,
-       proveedor: (proveedor ?? "manual") as Perfil["proveedor"],
-     });
+      proveedor: (proveedor ?? "manual") as Perfil["proveedor"],
+      password,
+    });
   };
 
   if (perfil) return null;
@@ -153,6 +159,17 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
             onChange={(e) => setTelefono(e.target.value)}
             placeholder="300 123 4567"
             autoComplete="tel"
+          />
+        </label>
+        <label className="form-field">
+          <span className="form-label">Contraseña</span>
+          <input
+            className="form-input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            autoComplete="new-password"
           />
         </label>
         <label className="register-option">

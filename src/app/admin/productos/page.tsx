@@ -25,6 +25,8 @@ type Producto = {
 
 export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [colecciones, setColecciones] = useState<{ id: string; nombre: string }[]>([]);
+  const [coleccionId, setColeccionId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     nombre: "",
@@ -50,6 +52,9 @@ export default function AdminProductos() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const load = async () => {
+    const { data: cols } = await supabase.from("colecciones").select("id,nombre").order("nombre");
+    setColecciones(cols || []);
+    if (cols && cols.length && !coleccionId) setColeccionId(cols[0].id);
     setLoading(true);
     try {
       const { data, error } = await supabase.from("productos").select("*").order("nombre", { ascending: true });
@@ -85,8 +90,9 @@ export default function AdminProductos() {
         uploadedUrls.push(pub.publicUrl);
       }
       const imagenes = [...form.imagenes, ...uploadedUrls];
-      const payload = {
-        nombre: form.nombre,
+       const payload = {
+         coleccion_id: coleccionId || null,
+         nombre: form.nombre,
         slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
         linea: form.linea === "singular" ? "SINGULAR" : "ORIGEN",
         precio_cop: Number(form.precio) || 0,
@@ -131,6 +137,7 @@ export default function AdminProductos() {
   };
 
   const editar = (p: Producto) => {
+    if (p.coleccion_id) setColeccionId(p.coleccion_id);
     setEditingId(p.id);
     setForm({
       nombre: p.nombre,
@@ -169,107 +176,168 @@ export default function AdminProductos() {
 
   return (
     <AdminGuard>
-      <main className="container" style={{ padding: "2rem 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem" }}>
-          <h1>Gestor de Productos / Inventario</h1>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <Link href="/admin/dashboard" className="cta-btn">Volver</Link>
-            <button className="cta-btn" onClick={() => { setEditingId(null); setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] }); setSelectedFiles([]); }}>+ Nuevo Producto</button>
-          </div>
-        </div>
-        <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "rgba(0,0,0,0.02)" }}>
-                <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Nombre</th>
-                <th style={{ padding: "1rem", textAlign: "left", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Línea</th>
-                <th style={{ padding: "1rem", textAlign: "right", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Precio</th>
-                <th style={{ padding: "1rem", textAlign: "center", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Stock</th>
-                <th style={{ padding: "1rem", textAlign: "center", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Activo</th>
-                <th style={{ padding: "1rem", textAlign: "right", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center" }}>Cargando...</td></tr>
-              ) : productos.map((p) => (
-                <tr key={p.id} style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
-                  <td style={{ padding: "1rem" }}>
-                    <div style={{ fontWeight: 500 }}>{p.nombre}</div>
-                    <div style={{ fontSize: "0.8rem", color: "rgba(0,0,0,0.5)" }}>{p.slug}</div>
-                  </td>
-                  <td style={{ padding: "1rem" }}>{p.linea === "SINGULAR" ? "Línea Singular" : "Línea Origen"}</td>
-                  <td style={{ padding: "1rem", textAlign: "right" }}>${(p.precio_cop || 0).toLocaleString("es-CO")} COP</td>
-                  <td style={{ padding: "1rem", textAlign: "center" }}>{p.stock_disponible || 0}</td>
-                  <td style={{ padding: "1rem", textAlign: "center" }}>{p.activo !== false ? "Sí" : "No"}</td>
-                  <td style={{ padding: "1rem", textAlign: "right" }}>
-                    <button onClick={() => editar(p)} style={{ marginRight: "0.5rem", color: "var(--color-accent)" }}>Editar</button>
-                    <button onClick={() => eliminar(p.id)} style={{ color: "#b3261e" }}>Eliminar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div style={{ marginTop: "2rem", background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", padding: "2rem" }}>
-          <h2 style={{ marginBottom: "1.5rem" }}>{editingId ? "Editar Producto" : "Nuevo Producto"}</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "1rem" }}>
-            <input className="form-input" placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
-            <input className="form-input" placeholder="Slug (opcional)" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
-            <select className="form-input" value={form.linea} onChange={(e) => setForm({ ...form, linea: e.target.value })}>
-              <option value="origen">Línea Origen</option>
-              <option value="singular">Línea Singular</option>
-            </select>
-            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-              <span>Precio COP</span>
-              <input className="form-input" type="number" placeholder="Precio COP" value={form.precio} onChange={(e) => setForm({ ...form, precio: Number(e.target.value) })} />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-              <span>Stock</span>
-              <input className="form-input" type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} />
-            </label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem", gridColumn: "1 / -1" }}>
-              <span>Imágenes</span>
-              <input ref={fileInputRef} className="form-input" type="file" accept="image/*" multiple onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))} />
-            </label>
-          </div>
-          <textarea className="form-input form-textarea" placeholder="Descripción corta" value={form.descripcion_corta} onChange={(e) => setForm({ ...form, descripcion_corta: e.target.value })} style={{ marginTop: "1rem" }} />
-          <textarea className="form-input form-textarea" placeholder="Narrativa / Historia" value={form.historia} onChange={(e) => setForm({ ...form, historia: e.target.value })} style={{ marginTop: "1rem" }} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: "1rem", marginTop: "1rem" }}>
-            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}><span>Tipo de hilo</span><input className="form-input" value={form.tipoHilo} onChange={(e) => setForm({ ...form, tipoHilo: e.target.value })} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}><span>Componentes</span><input className="form-input" value={form.componentes} onChange={(e) => setForm({ ...form, componentes: e.target.value })} /></label>
-            <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}><span>Tamaño de gema</span><input className="form-input" value={form.tamanoGema} onChange={(e) => setForm({ ...form, tamanoGema: e.target.value })} /></label>
-          </div>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "1rem" }}>
-            <input type="checkbox" checked={form.requiereTalla} onChange={(e) => setForm({ ...form, requiereTalla: e.target.checked })} />
-            <span>¿Requiere selección de talla?</span>
-          </label>
-          {form.requiereTalla && (
-            <input className="form-input" placeholder="Tallas separadas por coma (S, M, L)" value={form.tallas} onChange={(e) => setForm({ ...form, tallas: e.target.value })} style={{ marginTop: "0.5rem" }} />
-          )}
-          {form.linea === "origen" && (
-            <div style={{ marginTop: "1rem" }}>
-              <p style={{ marginBottom: "0.5rem" }}>Colores de hilo disponibles:</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                {COLORES_HILO.map((c) => (
-                  <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                    <input type="checkbox" checked={form.coloresHilo.includes(c.id)} onChange={(e) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        coloresHilo: e.target.checked ? [...prev.coloresHilo, c.id] : prev.coloresHilo.filter((x) => x !== c.id)
-                      }));
-                    }} />
-                    <span>{c.nombre}</span>
-                  </label>
-                ))}
+      <main className="admin-productos">
+        <div className="container">
+          <section className="admin-page-header">
+            <div className="admin-page-header-content">
+              <div className="admin-page-header-brand">
+                <span aria-hidden="true">✦</span>
+              </div>
+              <div>
+                <h1 className="admin-page-title">Gestor de Productos / Inventario</h1>
+                <p className="admin-page-subtitle">
+                  Crear, editar joyas, cargar imágenes y gestionar inventario de la colección Soberbia.
+                </p>
               </div>
             </div>
-          )}
-          <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginTop: "1rem" }}>
-            <input type="checkbox" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} />
-            <span>Producto activo</span>
-          </label>
-          <button className="cta-btn" onClick={guardar} style={{ marginTop: "1.5rem" }}>{editingId ? "Actualizar Producto" : "Guardar Producto"}</button>
+            <div className="admin-page-header-actions">
+              <Link href="/admin/dashboard" className="cta-btn admin-btn--back">Volver</Link>
+              <button
+                className="cta-btn admin-btn--new"
+                onClick={() => {
+                  setEditingId(null);
+                  setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] });
+                  setSelectedFiles([]);
+                }}
+              >
+                + Nuevo Producto
+              </button>
+            </div>
+          </section>
+
+          <div className="admin-product-table-wrap">
+            <table className="admin-product-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Línea</th>
+                  <th>Precio</th>
+                  <th>Stock</th>
+                  <th>Activo</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center" }}>Cargando…</td></tr>
+                ) : productos.length === 0 ? (
+                  <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "rgba(17,17,17,0.5)" }}>No hay productos registrados.</td></tr>
+                ) : productos.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <div style={{ fontWeight: 500 }}>{p.nombre}</div>
+                      <div style={{ fontSize: "0.8rem", color: "rgba(0,0,0,0.5)" }}>{p.slug}</div>
+                    </td>
+                    <td>{p.linea === "SINGULAR" ? "Línea Singular" : "Línea Origen"}</td>
+                    <td style={{ textAlign: "right" }}>${(p.precio_cop || 0).toLocaleString("es-CO")} COP</td>
+                    <td style={{ textAlign: "center" }}>{p.stock_disponible || 0}</td>
+                    <td style={{ textAlign: "center" }}>{p.activo !== false ? "Sí" : "No"}</td>
+                    <td style={{ textAlign: "right" }}>
+                      <button onClick={() => editar(p)} style={{ marginRight: "0.5rem", color: "var(--color-accent)" }}>Editar</button>
+                      <button onClick={() => eliminar(p.id)} style={{ color: "#b3261e" }}>Eliminar</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <section className="admin-product-form">
+            <h2 className="admin-form-title">{editingId ? "Editar Producto" : "Nuevo Producto"}</h2>
+            <div className="admin-form-grid">
+              <div className="admin-form-field">
+                <label className="admin-form-label">Nombre</label>
+                <input className="form-input" placeholder="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Slug (opcional)</label>
+                <input className="form-input" placeholder="Slug" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Línea</label>
+                <select className="form-input" value={form.linea} onChange={(e) => setForm({ ...form, linea: e.target.value })}>
+                  <option value="origen">Línea Origen</option>
+                  <option value="singular">Línea Singular</option>
+                </select>
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Colección (Pecado)</label>
+                <select className="form-input" value={coleccionId} onChange={(e) => setColeccionId(e.target.value)}>
+                  {colecciones.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Precio COP</label>
+                <input className="form-input" type="number" placeholder="Precio COP" value={form.precio} onChange={(e) => setForm({ ...form, precio: Number(e.target.value) })} />
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Stock</label>
+                <input className="form-input" type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} />
+              </div>
+              <div className="admin-form-field admin-form-field--full">
+                <label className="admin-form-label">Imágenes</label>
+                <input ref={fileInputRef} className="form-input" type="file" accept="image/*" multiple onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))} />
+              </div>
+              <div className="admin-form-field admin-form-field--full">
+                <label className="admin-form-label">Descripción corta</label>
+                <textarea className="form-input form-textarea" placeholder="Descripción corta" value={form.descripcion_corta} onChange={(e) => setForm({ ...form, descripcion_corta: e.target.value })} />
+              </div>
+              <div className="admin-form-field admin-form-field--full">
+                <label className="admin-form-label">Narrativa / Historia</label>
+                <textarea className="form-input form-textarea" placeholder="Narrativa" value={form.historia} onChange={(e) => setForm({ ...form, historia: e.target.value })} />
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Tipo de hilo</label>
+                <input className="form-input" value={form.tipoHilo} onChange={(e) => setForm({ ...form, tipoHilo: e.target.value })} />
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Componentes</label>
+                <input className="form-input" value={form.componentes} onChange={(e) => setForm({ ...form, componentes: e.target.value })} />
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Tamaño de gema</label>
+                <input className="form-input" value={form.tamanoGema} onChange={(e) => setForm({ ...form, tamanoGema: e.target.value })} />
+              </div>
+              <div className="admin-form-field admin-form-field--full">
+                <label className="admin-form-label checkbox-label" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <input type="checkbox" checked={form.requiereTalla} onChange={(e) => setForm({ ...form, requiereTalla: e.target.checked })} />
+                  <span>¿Requiere selección de talla?</span>
+                </label>
+                {form.requiereTalla && (
+                  <input className="form-input" placeholder="Tallas separadas por coma (S, M, L)" value={form.tallas} onChange={(e) => setForm({ ...form, tallas: e.target.value })} />
+                )}
+              </div>
+              {form.linea === "origen" && (
+                <div className="admin-form-field admin-form-field--full">
+                  <p style={{ marginBottom: "0.5rem", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(17,17,17,0.6)" }}>Colores de hilo disponibles:</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                    {COLORES_HILO.map((c) => (
+                      <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                        <input type="checkbox" checked={form.coloresHilo.includes(c.id)} onChange={(e) => {
+                          setForm((prev) => ({
+                            ...prev,
+                            coloresHilo: e.target.checked ? [...prev.coloresHilo, c.id] : prev.coloresHilo.filter((x) => x !== c.id)
+                          }));
+                        }} />
+                        <span>{c.nombre}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="admin-form-field admin-form-field--full">
+                <label className="admin-form-label checkbox-label" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <input type="checkbox" checked={form.activo} onChange={(e) => setForm({ ...form, activo: e.target.checked })} />
+                  <span>Producto activo</span>
+                </label>
+              </div>
+            </div>
+            <button className="cta-btn admin-form-save" onClick={guardar} style={{ marginTop: "1rem" }}>
+              {editingId ? "Actualizar Producto" : "Guardar Producto"}
+            </button>
+          </section>
         </div>
       </main>
     </AdminGuard>

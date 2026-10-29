@@ -7,12 +7,9 @@ import Link from "next/link";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 
-const ADMIN_EMAIL = "superadmin@romany.com";
-const ADMIN_PASSWORD = "Romany2026!";
-
 export default function AdminLogin() {
-  const [email, setEmail] = useState(ADMIN_EMAIL);
-  const [password, setPassword] = useState(ADMIN_PASSWORD);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -20,20 +17,16 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        localStorage.setItem("admin", "true");
-        router.push("/admin/dashboard");
-        setLoading(false);
-        return;
-      }
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       if (error) {
         alert("Credenciales inválidas");
         setLoading(false);
         return;
       }
       if (data.session) {
-        localStorage.setItem("admin", "true");
         router.push("/admin/dashboard");
       }
     } catch {
@@ -77,7 +70,7 @@ export default function AdminLogin() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Romany2026!"
+                  placeholder="••••••••"
                   autoComplete="current-password"
                   required
                 />

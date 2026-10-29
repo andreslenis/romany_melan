@@ -7,7 +7,22 @@ import { useEffect, useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { productosOrigen, productosSingular } from "@/data/productos";
+import { supabase } from "@/lib/supabase/client";
+
+export type ProductoSoberbia = {
+  id: string;
+  slug: string;
+  nombre: string;
+  linea: "origen" | "singular";
+  precio_cop?: number;
+  descripcion_corta?: string;
+  historia_narrativa?: string;
+  imagenes?: string[];
+  especificaciones?: { material?: string; componentes?: string; piedra?: string };
+  tallas?: unknown;
+  colores_hilo?: unknown;
+  activo?: boolean;
+};
 
 export default function SoberbiaClient() {
   const { perfil, hydrated } = usePerfil();
@@ -34,8 +49,36 @@ export default function SoberbiaClient() {
 
   const [linea, setLinea] = useState<"origen" | "singular">("origen");
   const [singularLocked, setSingularLocked] = useState(false);
+  const [productos, setProductos] = useState<ProductoSoberbia[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const productos = linea === "origen" ? productosOrigen : productosSingular;
+  useEffect(() => {
+    const fetchProductos = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("productos")
+          .select("*")
+          .eq("activo", true)
+          .order("nombre", { ascending: true });
+
+        if (error) {
+          console.error("Supabase error:", error);
+          setProductos([]);
+        } else {
+          setProductos((data || []) as ProductoSoberbia[]);
+        }
+      } catch (e) {
+        console.error(e);
+        setProductos([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProductos();
+  }, []);
+
+  const productosLinea = productos.filter((p) => p.linea === linea);
 
   const handleSelectSingular = () => {
     if (!hydrated || !perfil) {
@@ -132,47 +175,68 @@ export default function SoberbiaClient() {
         <section className="products-section">
           <div className="container">
             <div className="products-grid">
-              {productos
-                .filter((p) => p.slug !== "collar-doble-capas-de-soberbia")
-                .map((producto) => (
-                  <article key={producto.slug} className="product-card">
-                    <Link
-                      className="product-card-media product-card-media--link"
-                      href={`/producto/${producto.slug}`}
-                      aria-label={`Conoce la historia de ${producto.nombre}`}
-                    >
-                      <Image
-                        src={producto.imagen}
-                        alt={producto.nombre}
-                        fill
-                        style={{ objectFit: "cover" }}
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                      <span className="product-card-cta">Conoce su historia</span>
-                    </Link>
-                    <div className="product-card-body">
-                      <div className="product-card-info">
-                        <h3 className="product-card-title">
-                          {producto.nombre}
-                        </h3>
-                        <p className="product-card-badge">
-                          {producto.badge}
-                        </p>
-                        {linea === "origen" && (
-                          <p className="product-card-price">
-                            {producto.precioFormato}
-                          </p>
-                        )}
-                      </div>
+              {loading ? (
+                <div className="container">
+                  <p className="profile-empty">Cargando colección…</p>
+                </div>
+              ) : productosLinea.length === 0 ? (
+                <div className="container">
+                  <p className="profile-empty">
+                    No hay piezas disponibles en esta línea en este momento.
+                  </p>
+                </div>
+              ) : (
+                productosLinea.map((producto) => {
+                  const primeraImagen =
+                    Array.isArray(producto.imagenes) &&
+                    producto.imagenes.length > 0
+                      ? producto.imagenes[0]
+                     : `/resources/colecciones/soberbia/origen/${producto.slug}/${producto.slug}_soberbia.jpg`;
+                  return (
+                    <article key={producto.slug} className="product-card">
                       <Link
-                        className="product-card-btn"
+                        className="product-card-media product-card-media--link"
                         href={`/producto/${producto.slug}`}
+                        aria-label={`Conoce la historia de ${producto.nombre}`}
                       >
-                        Conoce su Historia
+                        <Image
+                          src={primeraImagen}
+                          alt={producto.nombre}
+                          fill
+                          style={{ objectFit: "cover" }}
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+                        <span className="product-card-cta">
+                          Conoce su historia
+                        </span>
                       </Link>
-                    </div>
-                  </article>
-                ))}
+                      <div className="product-card-body">
+                        <div className="product-card-info">
+                          <h3 className="product-card-title">
+                            {producto.nombre}
+                          </h3>
+                          <p className="product-card-badge">
+                            {producto.linea === "origen"
+                              ? "Oro Laminado 18K & Amatista Natural"
+                              : "Oro Macizo 18K & Gema de Selección Especial"}
+                          </p>
+                          {linea === "origen" && producto.precio_cop && (
+                            <p className="product-card-price">
+                              ${producto.precio_cop.toLocaleString("es-CO")} COP
+                            </p>
+                          )}
+                        </div>
+                        <Link
+                          className="product-card-btn"
+                          href={`/producto/${producto.slug}`}
+                        >
+                          Conoce su Historia
+                        </Link>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
             </div>
           </div>
         </section>

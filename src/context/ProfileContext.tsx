@@ -136,44 +136,47 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       proveedor?: Perfil["proveedor"];
       password?: string;
     }) => {
-      // Try Supabase signup first
-      if (datos.password) {
-        try {
-          const { data, error } = await supabase.auth.signUp({
-            email: datos.email,
-            password: datos.password,
-            options: {
-              data: {
-                full_name: datos.nombre,
-                phone: datos.telefono,
-              },
-            },
-          });
-          if (!error && data.user) {
-            // Also save locally
-            setPerfil({
-              nombre: datos.nombre,
-              email: datos.email,
-              telefono: datos.telefono,
-              miembro: datos.miembro,
-              proveedor: datos.proveedor ?? "manual",
-              desde: new Date().toISOString(),
-            });
-            return;
-          }
-        } catch {
-          // fallback to local
-        }
+      if (!datos.password) {
+        throw new Error("La contraseña es obligatoria para crear un perfil.");
       }
 
-      setPerfil({
-        nombre: datos.nombre,
-        email: datos.email,
-        telefono: datos.telefono,
-        miembro: datos.miembro,
-        proveedor: datos.proveedor ?? "manual",
-        desde: new Date().toISOString(),
-      });
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: datos.email,
+          password: datos.password,
+          options: {
+            data: {
+              full_name: datos.nombre,
+              phone: datos.telefono,
+            },
+            emailRedirectTo: typeof window !== "undefined" ? window.location.origin + "/mi-perfil" : undefined,
+          },
+        });
+        if (error) {
+          throw error;
+        }
+        if (data.user) {
+          setPerfil({
+            nombre: datos.nombre,
+            email: datos.email,
+            telefono: datos.telefono,
+            miembro: datos.miembro,
+            proveedor: datos.proveedor ?? "manual",
+            desde: new Date().toISOString(),
+          });
+          writeStorage(PERFIL_KEY, {
+            nombre: datos.nombre,
+            email: datos.email,
+            telefono: datos.telefono,
+            miembro: datos.miembro,
+            proveedor: datos.proveedor ?? "manual",
+            desde: new Date().toISOString(),
+          });
+        }
+      } catch (e) {
+        console.error("Signup error:", e);
+        throw e;
+      }
     },
     []
   );
