@@ -17,7 +17,7 @@ export default function AdminGuard({ children }: { children: React.ReactNode }) 
             .from("admins")
             .select("role")
             .eq("id", session.user.id)
-            .single();
+            .maybeSingle();
           if (profile && (profile.role === "superadmin" || profile.role === "admin")) {
             setOk(true);
             return;
