@@ -78,7 +78,7 @@ export default function SoberbiaClient() {
     fetchProductos();
   }, []);
 
-  const productosLinea = productos.filter((p) => p.linea === linea);
+  const productosLinea = productos.filter((p) => String(p.linea).toLowerCase() === linea);
 
   const handleSelectSingular = () => {
     if (!hydrated || !perfil) {
