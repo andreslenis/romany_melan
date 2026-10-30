@@ -21,7 +21,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
 
   type DBProd = {
     id: string; slug: string; nombre: string; linea: string; precio: number; precio_cop?: number; precioFormato?: string;
-    material?: string; categoria?: string; badge?: string; narrativa?: string; especificaciones?: any; tallas?: any;
+    material?: string; categoria?: string; badge?: string; narrativa?: string;     especificaciones?: { material?: string; componentes?: string; piedra?: string };
+    tallas?: (string | number)[];
     imagen?: string; imagenes?: string[]; colorHilo?: string; colores_hilo?: string[]; modoAcceso?: string; insignia?: string;
     grupo?: string; coleccion_id?: string;
   };
