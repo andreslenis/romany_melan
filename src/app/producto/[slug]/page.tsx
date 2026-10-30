@@ -421,13 +421,13 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 <div className="pdp-specs-content">
                   <ul>
                     <li>
-                      <strong>Material:</strong> {producto.especificaciones.material}
+                      <strong>Material:</strong> {producto.especificaciones?.material}
                     </li>
                     <li>
-                      <strong>Componentes metálicos:</strong> {producto.especificaciones.componentes}
+                      <strong>Componentes metálicos:</strong> {producto.especificaciones?.componentes}
                     </li>
                     <li>
-                      <strong>Piedra:</strong> {producto.especificaciones.piedra}
+                      <strong>Piedra:</strong> {producto.especificaciones?.piedra}
                     </li>
                   </ul>
                 </div>
