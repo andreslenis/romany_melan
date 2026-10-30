@@ -194,6 +194,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                   <Image
                     src={allImages[currentImageIndex] || imagenPrincipalVar}
                     alt={`${producto.nombre} · Hilo ${color?.nombre ?? ""}`}
+                   unoptimized
+                    unoptimized
                     fill
                     priority
 
