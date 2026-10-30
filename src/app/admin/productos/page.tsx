@@ -32,6 +32,7 @@ export default function AdminProductos() {
     nombre: "",
     slug: "",
     coleccion: "Soberbia",
+    grupo: "",
     linea: "origen",
     precio: 0,
     stock: 0,
@@ -94,8 +95,9 @@ export default function AdminProductos() {
        const payload = {
          coleccion_id: coleccionId || null,
          nombre: form.nombre,
-        slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-        linea: form.linea === "singular" ? "SINGULAR" : "ORIGEN",
+          slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+         linea: form.linea === "singular" ? "SINGULAR" : "ORIGEN",
+         grupo: form.grupo || null,
         precio_cop: Number(form.precio) || 0,
         stock_disponible: Number(form.stock) || 0,
         historia_narrativa: form.historia,
@@ -108,8 +110,8 @@ export default function AdminProductos() {
           piedra: form.tamanoGema
         },
         tallas: form.requiereTalla ? form.tallas.split(",").map((t) => t.trim()).filter(Boolean) : [],
-        admite_color_hilo: form.linea === "origen",
-        colores_hilo: form.linea === "origen" ? form.coloresHilo : []
+         admite_color_hilo: form.linea === "origen",
+         colores_hilo: form.linea === "origen" ? [form.tipoHilo] : []
       };
       if (editingId) {
         const { data, error } = await supabase.from("productos").update(payload).eq("id", editingId).select();
@@ -126,7 +128,7 @@ export default function AdminProductos() {
         }
         if (data && data[0]) setProductos((prev) => [data[0] as Producto, ...prev]);
       }
-      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] });
+      setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] });
       setSelectedFiles([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setEditingId(null);
@@ -142,7 +144,8 @@ export default function AdminProductos() {
     setEditingId(p.id);
     setForm({
       nombre: p.nombre,
-      slug: p.slug || "",
+       slug: p.slug || "",
+       grupo: (p as { grupo?: string }).grupo || "",
       coleccion: "Soberbia",
       linea: p.linea === "SINGULAR" ? "singular" : "origen",
       precio: p.precio_cop || 0,
@@ -197,7 +200,7 @@ export default function AdminProductos() {
                 className="cta-btn admin-btn--new"
                 onClick={() => {
                   setEditingId(null);
-                  setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] });
+                  setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] });
                   setSelectedFiles([]);
                 }}
               >
@@ -268,6 +271,10 @@ export default function AdminProductos() {
                     <option key={c.id} value={c.id}>{c.nombre}</option>
                   ))}
                 </select>
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Grupo / Familia (para variantes por color)</label>
+                <input className="form-input" placeholder="ej. anillo-nudo-sutil" value={form.grupo} onChange={(e) => setForm({ ...form, grupo: e.target.value })} />
               </div>
               <div className="admin-form-field">
                 <label className="admin-form-label">Precio COP</label>

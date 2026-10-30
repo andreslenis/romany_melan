@@ -30,7 +30,8 @@ create table if not exists productos (
   tallas jsonb,
   badge text,
   modo_acceso text,
-  insignia text
+  insignia text,
+  grupo text
 );
 
 do $$ begin

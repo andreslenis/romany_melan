@@ -1,42 +1,43 @@
-# Plan: Integrar gestor de productos con la BD y galería por pecado
+# Plan: PDP desde BD con variantes por color (1–3 fotos)
 
 ## Contexto
-- El admin (`src/app/admin/productos/page.tsx`) ya lee/escribe en la tabla `productos` de Supabase.
-- La galería pública (`src/app/coleccion/soberbia/SoberbiaClient.tsx`) también lee de `productos`, pero solo filtra por `activo`, sin relación con la colección/pecado.
-- El PDP (`src/app/producto/[slug]/page.tsx`) y `src/data/productos.ts` usan datos **hardcoded** (solo Soberbia), por eso los productos editados/creados en el admin no se reflejan y el emparejamiento de líneas (`par`) solo existe en código.
+- PDP (`src/app/producto/[slug]/page.tsx`) usa datos hardcoded de `src/data/productos.ts`.
+- Admin ya guarda productos en BD con `coleccion_id`, `linea`, `imagenes[]`, `colores_hilo[]` y `admite_color_hilo`.
+- Nuevo requerimiento: cada producto se guarda con **un solo color de hilo** y 1–3 fotos de ese color. El mismo diseño puede repetirse con otro color. Al seleccionar color en el PDP se deben mostrar las fotos de esa variante.
 
-## Objetivos
-1. Que el gestor de productos (admin) sea la fuente de verdad (BD) y que editar/crear/eliminar se refleje en la galería y PDP.
-2. Soportar múltiples colecciones (pecados), cada una con productos de dos líneas (Origen y Singular).
-3. Mostrar productos en la galería según el pecado seleccionado.
+## Decisiones
+- Agrupación por campo `grupo` (texto) compartido entre variantes del mismo diseño.
+- Nombre base común; el color se muestra como variante.
+- PDP carga todas las variantes del grupo en una sola consulta y cambia fotos en cliente.
 
-## Cambios propuestos
+## Cambios
 
-### 1. Esquema / datos
-- Asegurar `productos.coleccion_id` FK a `colecciones.id` y migrar/seed los productos hardcoded actuales a la BD (script de seed o insert manual).
-- Agregar campo `par_slug` (o usar convención) en `productos` para emparejar Origen↔Singular. Alternativa: emparejar por `slug` base o por campo `par_slug`.
+### 1. Esquema
+- Agregar `grupo text` a `productos` (y opcionalmente índice).
+- Migrar/seed: asignar `grupo` a productos existentes.
 
 ### 2. Admin productos
-- Agregar selector de colección (pecado) al formulario y enviar `coleccion_id` en el payload (hoy el campo `coleccion` no se envía).
-- En edición, cargar `coleccion_id` actual.
-- Filtrar la tabla por colección seleccionada (opcional).
+- Agregar campo `grupo` al formulario y al payload.
+- Cambiar selección de color: un solo color por producto (`color_hilo` singular) en lugar de `colores_hilo[]` múltiple. Guardar `colores_hilo` con un solo elemento (o nueva columna `color_hilo`).
+- Validar 1–3 imágenes por producto.
+- Editar: cargar `grupo` y color actual.
 
-### 3. Rutas públicas
-- Crear ruta dinámica `src/app/coleccion/[slug]/page.tsx` + client que cargue colección y productos por `coleccion_id`, filtrando por línea.
-- Mantener (o redirigir) `/coleccion/soberbia` a la nueva ruta.
-- PDP: obtener producto por slug desde Supabase en lugar de `productos.ts`; obtener contraparte por `par_slug`; "También te puede gustar" desde la misma colección.
+### 3. PDP
+- Obtener producto por `slug` desde BD.
+- Obtener todas las variantes con el mismo `grupo`.
+- Construir selector de color solo con colores que tienen variante.
+- Al seleccionar color, mostrar `imagenes` de la variante correspondiente.
+- "También te puede gustar" desde la misma colección (BD).
+- Eliminar dependencia de `src/data/productos.ts`.
 
-### 4. Eliminar dependencia hardcoded
-- Deprecar `src/data/productos.ts` (o convertirlo en seed). Mover helpers (`lineasDe`, `contraparte`) a consultar BD.
-
-### 5. Galería por pecado
-- Listar colecciones activas; cada pecado muestra sus productos de ambas líneas con selector Origen/Singular.
+### 4. Galería
+- Sin cambios mayores; ya lee de BD.
 
 ## Riesgos
-- PDP usa `imagenesPorColor` y color de hilo; en BD solo hay `imagenes` array. Definir cómo se almacenan imágenes por color (JSONB `imagenes_por_color`) o generar rutas por convención.
-- Productos existentes en código no están en BD → sin seed, la galería quedará vacía.
+- Productos existentes sin `grupo` no se agruparán; requiere migración manual.
+- Compatibilidad con `colores_hilo[]` actual; decidir si mantener o reemplazar.
 
 ## Validación
-- Crear/editar producto en admin → aparece en galería del pecado y PDP.
-- Cambiar colección → producto aparece en la galería correspondiente.
-- Línea Singular requiere perfil (mantener gate).
+- Crear 2 variantes del mismo diseño con colores distintos y 2–3 fotos cada una.
+- En PDP seleccionar color → fotos cambian.
+- Nuevo producto aparece en galería y PDP.

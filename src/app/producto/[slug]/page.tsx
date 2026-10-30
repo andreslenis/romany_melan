@@ -9,7 +9,8 @@ import SiteHeader from "@/components/SiteHeader";
 
 import { useCart } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
-import { lineasDe, productoPorSlug, productosSoberbia } from "@/data/productos";
+
+import { supabase } from "@/lib/supabase/client";
 import { COLORES_HILO, colorPorId } from "@/lib/pecados";
 import { LINEAS_CORTAS, type Linea } from "@/lib/types";
 
@@ -18,19 +19,46 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   const { addItem } = useCart();
   const { perfil, solicitarEspera } = usePerfil();
 
-  const productoBase = productoPorSlug(slug);
-  const lineas = productoBase ? lineasDe(productoBase) : [];
+  type DBProd = {
+    id: string; slug: string; nombre: string; linea: string; precio: number; precio_cop?: number; precioFormato?: string;
+    material?: string; categoria?: string; badge?: string; narrativa?: string; especificaciones?: any; tallas?: any;
+    imagen?: string; imagenes?: string[]; colorHilo?: string; colores_hilo?: string[]; modoAcceso?: string; insignia?: string;
+    grupo?: string; coleccion_id?: string;
+  };
 
-  const [lineaActiva, setLineaActiva] = useState<Linea>(
-    productoBase?.linea ?? "origen"
-  );
+  const [productoBase, setProductoBase] = useState<DBProd | null>(null);
+  const [variantes, setVariantes] = useState<DBProd[]>([]);
+  const [lineaActiva, setLineaActiva] = useState<Linea>("origen");
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [colorHilo, setColorHilo] = useState<string>("soberbia");
   const [observaciones, setObservaciones] = useState("");
   const [emailEspera, setEmailEspera] = useState("");
   const [esperaRegistrada, setEsperaRegistrada] = useState(false);
 
-  const producto = lineas.find((l) => l.linea === lineaActiva) ?? productoBase;
+  useEffect(() => {
+    const load = async () => {
+      const { data: p } = await supabase.from("productos").select("*").eq("slug", slug).maybeSingle();
+      if (!p) { setProductoBase(null); return; }
+      const prod = p as DBProd;
+      setProductoBase(prod);
+      setLineaActiva(String(prod.linea).toLowerCase() === "singular" ? "singular" : "origen");
+      setColorHilo(Array.isArray(prod.colores_hilo) && prod.colores_hilo.length ? prod.colores_hilo[0] : "soberbia");
+      setSelectedSize(Array.isArray(prod.tallas) && prod.tallas.length ? String(prod.tallas[0]) : null);
+      if (prod.grupo) {
+        const { data: vs } = await supabase.from("productos").select("*").eq("grupo", prod.grupo);
+        setVariantes((vs || []) as DBProd[]);
+      } else {
+        setVariantes([prod]);
+      }
+    };
+    load();
+  }, [slug]);
+
+  const varianteActual = variantes.find((v) => {
+    const cs = Array.isArray(v.colores_hilo) ? v.colores_hilo : [];
+    return cs.includes(colorHilo);
+  }) || productoBase;
+  const producto = varianteActual || productoBase;
   const slugActivo = producto?.slug;
 
   const [zoomOpen, setZoomOpen] = useState(false);
@@ -42,14 +70,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     setCurrentImageIndex(0);
   }, [slugActivo, colorHilo]);
 
-  useEffect(() => {
-    if (!slugActivo) return;
-    const actual = productoPorSlug(slugActivo);
-    if (!actual) return;
-    setSelectedSize(actual.tallas.length ? String(actual.tallas[0]) : null);
-    setColorHilo(actual.colorHilo ?? "soberbia");
-    setObservaciones("");
-  }, [slugActivo]);
+
 
   useEffect(() => {
     if (!perfil) return;
@@ -108,8 +129,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     );
   }
 
-  const imagenPrincipalVar =
-    (producto.imagenesPorColor?.[colorHilo] ?? producto.imagen) as string;
+  const imagenPrincipalVar = (Array.isArray(producto.imagenes) && producto.imagenes.length ? producto.imagenes[0] : producto.imagen) as string;
 
   const allImages = Array.isArray(producto.imagenes) && producto.imagenes.length > 0
     ? [imagenPrincipalVar, ...producto.imagenes.filter((img: string) => img !== imagenPrincipalVar)]
@@ -119,8 +139,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     addItem({
       slug: producto.slug,
       nombre: producto.nombre,
-      linea: LINEAS_CORTAS[producto.linea],
-      lineaId: producto.linea,
+      linea: LINEAS_CORTAS[producto.linea as Linea],
+      lineaId: producto.linea as Linea,
       precio: producto.precio,
       imagen: imagenPrincipalVar,
       talla: selectedSize,
@@ -138,7 +158,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
       slug: producto.slug,
       nombre: producto.nombre,
       email,
-      linea: producto.linea,
+      linea: producto.linea as Linea,
     });
     setEsperaRegistrada(true);
   };
@@ -175,7 +195,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                     alt={`${producto.nombre} · Hilo ${color?.nombre ?? ""}`}
                     fill
                     priority
-                    unoptimized={producto.imagenSinOptimizar}
+
                     style={{ objectFit: "cover" }}
                     sizes="(max-width: 968px) 100vw, 50vw"
                   />
@@ -257,7 +277,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                           src={img}
                           alt={`${producto.nombre} imagen ${idx + 1}`}
                           fill
-                          unoptimized={producto.imagenSinOptimizar}
                           style={{ objectFit: "cover" }}
                         />
                       </div>
@@ -274,19 +293,19 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 <p className="pdp-price">{producto.precioFormato}</p>
               </div>
 
-              {lineas.length > 1 && (
+               {variantes.length > 1 && false && (
                 <div className="pdp-line-selector">
                   <h3 className="pdp-block-title">Elige tu línea</h3>
                   <div className="pdp-line-tabs" role="tablist">
-                    {lineas.map((linea) => (
+                    {variantes.map((linea) => (
                       <button
                         key={linea.slug}
                         role="tab"
                         aria-selected={linea.linea === lineaActiva}
                         className={`pdp-line-tab ${linea.linea === lineaActiva ? "active" : ""}`}
-                        onClick={() => setLineaActiva(linea.linea)}
+                        onClick={() => setLineaActiva(linea.linea as Linea)}
                       >
-                        <span className="pdp-line-tab-name">{LINEAS_CORTAS[linea.linea]}</span>
+                        <span className="pdp-line-tab-name">{LINEAS_CORTAS[linea.linea as Linea]}</span>
                         <span className="pdp-line-tab-material">{linea.material}</span>
                         {perfil && <span className="pdp-line-tab-price">{linea.precioFormato}</span>}
                       </button>
@@ -313,7 +332,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                   <h3 className="pdp-block-title">Color del hilo</h3>
                   <p className="pdp-color-intro">Cada hilo toma el color de un pecado, o los tonos neutros Oscuridad y Luz. Elige el que te acompaña.</p>
                   <div className="color-swatches">
-                    {COLORES_HILO.map((opcion) => (
+                    {COLORES_HILO.filter((c) => variantes.some((v) => Array.isArray(v.colores_hilo) && v.colores_hilo.includes(c.id))).map((opcion) => (
                       <button
                         key={opcion.id}
                         type="button"
@@ -444,29 +463,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 <p>{producto.narrativa}</p>
               </div>
 
-              {(() => {
-                const otros = productosSoberbia.filter((p) => p.slug !== producto.slug);
-                if (otros.length === 0) return null;
-                const random = otros[Math.floor(Math.random() * otros.length)];
-                return (
-                  <div style={{ marginTop: "2rem", paddingTop: "2rem", borderTop: "1px solid rgba(0,0,0,0.08)" }}>
-                    <h3 className="pdp-block-title" style={{ marginBottom: "1rem" }}>También te puede gustar</h3>
-                    <Link href={`/producto/${random.slug}`} style={{ display: "flex", gap: "1rem", alignItems: "center", padding: "1rem", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", transition: "border-color 0.2s ease" }}>
-                      <div style={{ width: "80px", height: "100px", position: "relative", borderRadius: "0.5rem", overflow: "hidden", flexShrink: 0 }}>
-                        <Image src={random.imagen} alt={random.nombre} fill style={{ objectFit: "cover" }} />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.25rem" }}>{random.nombre}</div>
-                        <div style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.6)" }}>{random.linea === "origen" ? "Línea Origen" : "Línea Singular"}</div>
-                        <div style={{ marginTop: "0.25rem", fontWeight: 500 }}>{random.precioFormato}</div>
-                      </div>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                      </svg>
-                    </Link>
-                  </div>
-                );
-              })()}
+              {null}
             </div>
           </div>
         </section>
@@ -505,7 +502,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                   alt={`${producto.nombre} · Hilo ${color?.nombre ?? ""}`}
                   width={800}
                   height={1000}
-                  unoptimized={producto.imagenSinOptimizar}
+
                   style={{
                     maxWidth: "100%",
                     maxHeight: "100%",
