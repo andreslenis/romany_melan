@@ -350,7 +350,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 </div>
               )}
 
-              {producto.tallas.length > 0 && (
+               {Array.isArray(producto.tallas) && producto.tallas.length > 0 && (
                 <div className="pdp-size-block">
                   <h3 className="pdp-block-title">Talla</h3>
                   <div className="pdp-size-options">
