@@ -797,7 +797,13 @@ button {
 .products-grid {
   display: grid;
   gap: clamp(1.5rem, 4vw, 2rem);
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  justify-content: start;
+}
+
+.products-grid--single {
+  grid-template-columns: minmax(260px, 320px);
+  justify-content: start;
 }
 
 .product-card {

@@ -42,7 +42,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
       if (!p) { setProductoBase(null); return; }
       const prod = p as DBProd;
       setProductoBase(prod);
-      setLineaActiva(String(prod.linea).toLowerCase() === "singular" ? "singular" : "origen");
+      const prodLinea = String(prod.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
+      setLineaActiva(prodLinea);
       setColorHilo(Array.isArray(prod.colores_hilo) && prod.colores_hilo.length ? prod.colores_hilo[0] : "soberbia");
       setSelectedSize(Array.isArray(prod.tallas) && prod.tallas.length ? String(prod.tallas[0]) : null);
       if (prod.grupo) {
@@ -55,10 +56,21 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     load();
   }, [slug]);
 
-  const varianteActual = variantes.find((v) => {
-    const cs = Array.isArray(v.colores_hilo) ? v.colores_hilo : [];
-    return cs.includes(colorHilo);
-  }) || productoBase;
+  const varianteActual = (() => {
+    const lineaActivaNorm = lineaActiva;
+    const byColorInLinea = variantes.find((v) => {
+      const vLinea = String(v.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
+      const cs = Array.isArray(v.colores_hilo) ? v.colores_hilo : [];
+      return vLinea === lineaActivaNorm && cs.includes(colorHilo);
+    });
+    if (byColorInLinea) return byColorInLinea;
+    const byColorAny = variantes.find((v) => {
+      const cs = Array.isArray(v.colores_hilo) ? v.colores_hilo : [];
+      return cs.includes(colorHilo);
+    });
+    if (byColorAny) return byColorAny;
+    return productoBase;
+  })();
   const producto = varianteActual || productoBase;
   const slugActivo = producto?.slug;
 
@@ -111,7 +123,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   }
 
   const color = colorPorId(colorHilo);
-  const esSingular = producto.linea === "singular";
+  const lineaNormProducto = String(producto.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
+  const esSingular = lineaNormProducto === "singular";
 
   if (esSingular && !perfil) {
     return (
@@ -140,8 +153,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     addItem({
       slug: producto.slug,
       nombre: producto.nombre,
-      linea: LINEAS_CORTAS[producto.linea as Linea],
-      lineaId: producto.linea as Linea,
+      linea: LINEAS_CORTAS[lineaNormProducto as Linea],
+      lineaId: lineaNormProducto as Linea,
       precio: producto.precio,
       imagen: imagenPrincipalVar,
       talla: selectedSize,
@@ -155,12 +168,12 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     event.preventDefault();
     const email = (emailEspera || perfil?.email || "").trim();
     if (!email) return;
-    solicitarEspera({
-      slug: producto.slug,
-      nombre: producto.nombre,
-      email,
-      linea: producto.linea as Linea,
-    });
+      solicitarEspera({
+        slug: producto.slug,
+        nombre: producto.nombre,
+        email,
+        linea: lineaNormProducto as Linea,
+      });
     setEsperaRegistrada(true);
   };
 

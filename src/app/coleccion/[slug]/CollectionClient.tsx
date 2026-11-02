@@ -69,7 +69,7 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
         </section>
         <section className="products-section">
           <div className="container">
-            <div className="products-grid">
+            <div className={`products-grid ${productosLinea.length === 1 ? "products-grid--single" : ""}`}>
               {loading ? <p>Cargando…</p> : productosLinea.length === 0 ? <p>No hay piezas disponibles.</p> : productosLinea.map((p) => {
                 const img = Array.isArray(p.imagenes) && p.imagenes.length ? p.imagenes[0] : "";
                 return (

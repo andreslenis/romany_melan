@@ -174,7 +174,7 @@ export default function SoberbiaClient() {
 
         <section className="products-section">
           <div className="container">
-            <div className="products-grid">
+            <div className={`products-grid ${productosLinea.length === 1 ? "products-grid--single" : ""}`}>
               {loading ? (
                 <div className="container">
                   <p className="profile-empty">Cargando colección…</p>
