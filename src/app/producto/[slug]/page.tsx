@@ -393,42 +393,46 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 />
               </div>
 
-              <div className="pdp-actions">
-                {producto.modoAcceso === "disponible" ? (
-                  <button className="pdp-add-btn" onClick={handleAddToCart}>
-                    Tejer esta Historia en mi Piel
-                  </button>
-                ) : producto.modoAcceso === "circulo" ? (
-                  <>
-                    <Link className="pdp-add-btn pdp-add-btn--outline" href="/mi-perfil">
-                      Solicitar Acceso al Círculo
-                    </Link>
-                    <p className="pdp-access-note">Esta obra no está en stock abierto. Crea tu perfil en el Círculo para solicitar el acceso y ser notificado cuando haya una edición disponible.</p>
-                  </>
-                ) : esperaRegistrada ? (
-                  <p className="pdp-waitlist-done">
-                    Te anotamos en la lista de espera de <strong>{producto.nombre}</strong>. Te avisaremos por correo cuando abramos la próxima edición.
-                  </p>
-                ) : (
-                  <form className="pdp-waitlist" onSubmit={handleEspera}>
-                    <label className="form-field">
-                      <span className="form-label">Correo para la lista de espera</span>
-                      <input
-                        className="form-input"
-                        type="email"
-                        value={emailEspera}
-                        onChange={(e) => setEmailEspera(e.target.value)}
-                        placeholder="tu@email.com"
-                        required
-                      />
-                    </label>
-                    <button type="submit" className="pdp-add-btn">
-                      Unirme a la Lista de Espera
-                    </button>
-                    <p className="pdp-access-note">Obra invariable de edición limitada. Guardamos tu lugar en la fila y te escribimos en cuanto haya una unidad.</p>
-                  </form>
-                )}
-              </div>
+               <div className="pdp-actions">
+                 {producto.modoAcceso === "disponible" ? (
+                   <button className="pdp-add-btn" onClick={handleAddToCart}>
+                     Tejer esta Historia en mi Piel
+                   </button>
+                 ) : producto.modoAcceso === "circulo" ? (
+                   <>
+                     <Link className="pdp-add-btn pdp-add-btn--outline" href="/mi-perfil">
+                       Solicitar Acceso al Círculo
+                     </Link>
+                     <p className="pdp-access-note">Esta obra no está en stock abierto. Crea tu perfil en el Círculo para solicitar el acceso y ser notificado cuando haya una edición disponible.</p>
+                   </>
+                 ) : !esSingular ? (
+                   <button className="pdp-add-btn" onClick={handleAddToCart}>
+                     Tejer esta Historia en mi Piel
+                   </button>
+                 ) : esperaRegistrada ? (
+                   <p className="pdp-waitlist-done">
+                     Te anotamos en la lista de espera de <strong>{producto.nombre}</strong>. Te avisaremos por correo cuando abramos la próxima edición.
+                   </p>
+                 ) : (
+                   <form className="pdp-waitlist" onSubmit={handleEspera}>
+                     <label className="form-field">
+                       <span className="form-label">Correo para la lista de espera</span>
+                       <input
+                         className="form-input"
+                         type="email"
+                         value={emailEspera}
+                         onChange={(e) => setEmailEspera(e.target.value)}
+                         placeholder="tu@email.com"
+                         required
+                       />
+                     </label>
+                     <button type="submit" className="pdp-add-btn">
+                       Unirme a la Lista de Espera
+                     </button>
+                     <p className="pdp-access-note">Obra invariable de edición limitada. Guardamos tu lugar en la fila y te escribimos en cuanto haya una unidad.</p>
+                   </form>
+                 )}
+               </div>
 
               <details className="pdp-specs">
                 <summary>Especificaciones técnicas</summary>
