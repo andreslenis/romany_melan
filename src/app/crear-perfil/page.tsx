@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 
 import SiteFooter from "@/components/SiteFooter";
@@ -26,7 +27,9 @@ export default function CrearPerfilPage() {
               </p>
             </div>
           </header>
-          <CrearPerfil />
+          <Suspense fallback={<div className="crear-perfil" />}>
+            <CrearPerfil />
+          </Suspense>
           <div className="profile-gate-actions">
             <Link href="/coleccion/soberbia" className="cta-btn">
               Ver la Colección
