@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { usePerfil } from "@/context/ProfileContext";
 import type { Perfil } from "@/lib/types";
@@ -51,6 +52,8 @@ const PROVEEDORES: {
 ];
 
 export default function CrearPerfil({ compacto = false }: { compacto?: boolean }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { registrar, perfil, signInWithGoogle, signInWithApple } = usePerfil();
   const [proveedor, setProveedor] = useState<Proveedor | null>(null);
   const [nombre, setNombre] = useState("");
@@ -59,6 +62,14 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
   const [password, setPassword] = useState("");
   const [miembro, setMiembro] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const returnTo = searchParams?.get("return") || "/mi-perfil";
+
+  useEffect(() => {
+    if (perfil) {
+      router.push(returnTo);
+    }
+  }, [perfil, router, returnTo]);
 
   const handleProveedor = async (id: Proveedor) => {
     setProveedor(id);
@@ -87,14 +98,19 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
       setError("La contraseña debe tener al menos 6 caracteres.");
       return;
     }
-    await registrar({
-      nombre: nombre.trim(),
-      email: email.trim(),
-      telefono: telefono.trim(),
-      miembro,
-      proveedor: (proveedor ?? "manual") as Perfil["proveedor"],
-      password,
-    });
+    try {
+      await registrar({
+        nombre: nombre.trim(),
+        email: email.trim(),
+        telefono: telefono.trim(),
+        miembro,
+        proveedor: (proveedor ?? "manual") as Perfil["proveedor"],
+        password,
+      });
+      router.push(returnTo);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo crear el perfil.");
+    }
   };
 
   if (perfil) return null;

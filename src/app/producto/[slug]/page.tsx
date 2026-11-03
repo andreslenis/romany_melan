@@ -150,12 +150,18 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     : [imagenPrincipalVar];
 
   const handleAddToCart = () => {
+    const precio = Number(
+      (producto as any).precio ??
+        (producto as any).precio_cop ??
+        (producto as any).precioCop ??
+        0
+    );
     addItem({
       slug: producto.slug,
       nombre: producto.nombre,
       linea: LINEAS_CORTAS[lineaNormProducto as Linea],
       lineaId: lineaNormProducto as Linea,
-      precio: producto.precio,
+      precio: isNaN(precio) ? 0 : precio,
       imagen: imagenPrincipalVar,
       talla: selectedSize,
       colorHilo: esSingular ? null : colorHilo,

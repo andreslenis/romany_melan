@@ -113,19 +113,26 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const close = useCallback(() => setIsOpen(false), []);
 
   const value = useMemo<CartContextValue>(
-    () => ({
-      items,
-      count: items.reduce((acc, i) => acc + i.cantidad, 0),
-      subtotal: items.reduce((acc, i) => acc + i.cantidad * i.precio, 0),
-      isOpen,
-      hydrated,
-      addItem,
-      removeItem,
-      updateQuantity,
-      clear,
-      open,
-      close,
-    }),
+    () => {
+      const itemsSanitizados = items.map((i) => ({
+        ...i,
+        precio: Number(i.precio) || 0,
+        cantidad: Number(i.cantidad) || 0,
+      }));
+      return {
+        items: itemsSanitizados,
+        count: itemsSanitizados.reduce((acc, i) => acc + (Number(i.cantidad) || 0), 0),
+        subtotal: itemsSanitizados.reduce((acc, i) => acc + (Number(i.cantidad) || 0) * (Number(i.precio) || 0), 0),
+        isOpen,
+        hydrated,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clear,
+        open,
+        close,
+      };
+    },
     [items, isOpen, hydrated, addItem, removeItem, updateQuantity, clear, open, close]
   );
 

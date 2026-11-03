@@ -155,6 +155,15 @@ export default function CheckoutForm({
                 Línea Singular (Oro Macizo 18K) y colecciones de edición
                 limitada.&rdquo;
               </span>
+              {modo === "miembro" && (
+                <a
+                  href="/crear-perfil?return=/checkout"
+                  className="pdp-add-btn"
+                  style={{ marginTop: "0.75rem", display: "inline-flex", width: "auto" }}
+                >
+                  Ir a crear perfil
+                </a>
+              )}
             </span>
           </label>
         </div>
