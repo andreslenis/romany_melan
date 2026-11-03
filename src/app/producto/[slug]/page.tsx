@@ -150,10 +150,11 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     : [imagenPrincipalVar];
 
   const handleAddToCart = () => {
+    const prodAny = producto as unknown as Record<string, unknown>;
     const precio = Number(
-      (producto as any).precio ??
-        (producto as any).precio_cop ??
-        (producto as any).precioCop ??
+      prodAny.precio ??
+        prodAny.precio_cop ??
+        prodAny.precioCop ??
         0
     );
     addItem({
