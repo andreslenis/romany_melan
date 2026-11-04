@@ -17,6 +17,7 @@ import { useCart } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
 import { randomId } from "@/lib/storage";
 import type { DireccionEnvio } from "@/lib/types";
+import { supabase } from "@/lib/supabase/client";
 import { formatCOP } from "@/utils/format";
 
 export default function CheckoutPage() {
@@ -54,21 +55,40 @@ export default function CheckoutPage() {
     setPaso(2);
   }, [modo, datos, registrar]);
 
-  const handlePagado = useCallback(
-    (resultado: ResultadoPago) => {
-      const pedido = crearPedido({
-        items,
-        total: subtotal,
-        direccion: datos,
-        metodoPago: resultado.metodo,
-        referencia: resultado.referencia || referencia,
-        esMiembro: modo === "miembro",
-      });
-      clear();
-      router.push(`/mi-perfil?pedido=${pedido.id}`);
-    },
-    [crearPedido, items, subtotal, datos, modo, referencia, clear, router]
-  );
+   const handlePagado = useCallback(
+     async (resultado: ResultadoPago) => {
+       const pedido = crearPedido({
+         items,
+         total: subtotal,
+         direccion: datos,
+         metodoPago: resultado.metodo,
+         referencia: resultado.referencia || referencia,
+         esMiembro: modo === "miembro",
+       });
+       clear();
+       try {
+         await supabase.from("pedidos").insert({
+           numero_pedido: pedido.referencia,
+           cliente_nombre: datos.nombre,
+           cliente_email: datos.email,
+           cliente_telefono: datos.telefono,
+           direccion_envio: datos,
+           items: items,
+           total_cop: subtotal,
+           wompi_transaction_id: resultado.referencia,
+           estado_pago: "APROBADO",
+         });
+       } catch (e) {
+         console.error("Error guardando pedido", e);
+       }
+       if (modo === "invitado") {
+         router.push(`/checkout/confirmado?ref=${encodeURIComponent(pedido.referencia)}`);
+       } else {
+         router.push(`/mi-perfil?pedido=${pedido.id}`);
+       }
+     },
+     [crearPedido, items, subtotal, datos, modo, referencia, clear, router]
+   );
 
   if (!hydrated) {
     return (
