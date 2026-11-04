@@ -60,11 +60,11 @@ export interface WompiTransaccion {
 export interface WompiConfig {
   locale: string;
   currency: string;
-  environment: "test" | "production";
+  environment?: "test" | "production";
   publicKey: string;
   amountInCents?: number;
   reference?: string;
-  container: string;
+  container?: string;
   signature?: { integrity: string };
   onCompleted?: (response: { transaction: WompiTransaccion }) => void;
   onError?: (error: unknown) => void;
@@ -72,7 +72,8 @@ export interface WompiConfig {
 
 declare global {
   interface Window {
-    WompiCheckout?: new (config: WompiConfig) => void;
+    WompiCheckout?: new (config: WompiConfig) => { open: (cb: (result: { transaction: WompiTransaccion }) => void) => void };
+    WidgetCheckout?: new (config: WompiConfig) => { open: (cb: (result: { transaction: WompiTransaccion }) => void) => void };
   }
 }
 

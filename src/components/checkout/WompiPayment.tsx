@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   loadWompiScript,
@@ -48,6 +48,8 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
     METODOS_PAGO[0]?.id || "card"
   );
 
+  const checkoutRef = useRef<unknown>(null);
+
   useEffect(() => {
     if (!wompiIsConfigured) return;
     if (!signature) return;
@@ -57,37 +59,21 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
     (async () => {
       const cargado = await loadWompiScript();
       if (cancelado) return;
-
-      if (!cargado || !window.WompiCheckout) {
+      if (!cargado || !window.WidgetCheckout) {
         setEstadoWidget("error");
         return;
       }
-
       try {
-        new window.WompiCheckout({
+        const checkout = new window.WidgetCheckout({
           locale: "es-CO",
           currency: "COP",
           amountInCents: Math.round(total * 100),
           reference: referencia,
-          environment: WOMPI_ENVIRONMENT === "PROD" ? "production" : "test",
           publicKey: WOMPI_PUBLIC_KEY,
           signature: { integrity: signature },
-          container: "#wompi-widget",
           ...(WOMPI_REDIRECT_URL ? { redirectUrl: WOMPI_REDIRECT_URL } : {}),
-          onCompleted: ({ transaction }) => {
-            const metodoLabel =
-              METODOS_PAGO.find(
-                (m) => m.id === transaction.payment_method?.type
-              )?.label ??
-              METODOS_PAGO.find((m) => m.id === metodoSeleccionado)?.label ??
-              "Pago en línea";
-            onPagado({
-              referencia: transaction.reference || referencia,
-              estado: transaction.status,
-              metodo: metodoLabel,
-            });
-          },
         });
+        checkoutRef.current = checkout;
         setEstadoWidget("listo");
       } catch {
         setEstadoWidget("error");
@@ -97,7 +83,7 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
     return () => {
       cancelado = true;
     };
-  }, [referencia, onPagado, metodoSeleccionado, signature]);
+  }, [referencia, total, signature]);
 
   const metodoLabelActual =
     METODOS_PAGO.find((m) => m.id === metodoSeleccionado)?.label ||
@@ -162,7 +148,31 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
                 de Wompi.
               </p>
             )}
-            <div id="wompi-widget" className="wompi-widget" />
+             <div id="wompi-widget" className="wompi-widget" />
+             {estadoWidget === "listo" && (
+               <button
+                 type="button"
+                 className="pdp-add-btn"
+                 onClick={() => {
+                   const checkout = checkoutRef.current as { open: (cb: (r: { transaction: unknown }) => void) => void } | null;
+                   if (!checkout) return;
+                   checkout.open((result: any) => {
+                     const transaction = result.transaction;
+                     const metodoLabel =
+                       METODOS_PAGO.find((m) => m.id === transaction.payment_method?.type)?.label ??
+                       METODOS_PAGO.find((m) => m.id === metodoSeleccionado)?.label ??
+                       "Pago en línea";
+                     onPagado({
+                       referencia: transaction.reference || referencia,
+                       estado: transaction.status,
+                       metodo: metodoLabel,
+                     });
+                   });
+                 }}
+               >
+                 Pagar con Wompi
+               </button>
+             )}
             {estadoWidget === "error" && (
               <button
                 type="button"
