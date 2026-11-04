@@ -156,8 +156,8 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
                  onClick={() => {
                    const checkout = checkoutRef.current as { open: (cb: (r: { transaction: unknown }) => void) => void } | null;
                    if (!checkout) return;
-                   checkout.open((result: any) => {
-                     const transaction = result.transaction;
+                   checkout.open((result: unknown) => {
+                     const transaction = (result as { transaction: { reference?: string; status: ResultadoPago["estado"]; payment_method?: { type?: string } } }).transaction;
                      const metodoLabel =
                        METODOS_PAGO.find((m) => m.id === transaction.payment_method?.type)?.label ??
                        METODOS_PAGO.find((m) => m.id === metodoSeleccionado)?.label ??
