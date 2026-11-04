@@ -83,11 +83,18 @@ export default function AdminProductos() {
   const guardar = async () => {
     try {
       const uploadedUrls: string[] = [];
-      const totalAfter = form.imagenes.length + selectedFiles.length;
-      if (totalAfter > 3) {
-        alert("Máximo 3 fotos por producto");
-        return;
-      }
+       const totalAfter = form.imagenes.length + selectedFiles.length;
+       if (totalAfter > 3) {
+         alert("Máximo 3 fotos por producto");
+         return;
+       }
+       if (form.linea === "origen") {
+         const faltantes = form.coloresHilo.filter((c) => !form.imagenesPorColor?.[c]);
+         if (faltantes.length > 0) {
+           alert("Debes cargar la foto para cada variante de color seleccionada");
+           return;
+         }
+       }
       for (const file of selectedFiles) {
         const path = Date.now() + "-" + Math.random().toString(36).slice(2) + "-" + file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
         const { error: upErr } = await supabase.storage.from("productos").upload(path, file);
@@ -110,7 +117,7 @@ export default function AdminProductos() {
         historia_narrativa: form.historia,
         descripcion_corta: form.descripcion_corta,
         activo: form.activo,
-        imagenes: [...(form.imagenes || []), ...[]].slice(0, 3),
+         imagenes: [...(form.imagenes || []), ...uploadedUrls].slice(0, 3),
         imagenes_por_color: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
         imagenesPorColor: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
         especificaciones: {
@@ -352,6 +359,33 @@ export default function AdminProductos() {
                   <input className="form-input" placeholder="Tallas separadas por coma (S, M, L)" value={form.tallas} onChange={(e) => setForm({ ...form, tallas: e.target.value })} />
                 )}
               </div>
+              {form.linea === "origen" && (
+                <div className="admin-form-field admin-form-field--full">
+                  <label className="admin-form-label">Variantes de color de hilo</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                    {COLORES_HILO.map((c) => (
+                      <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.6rem", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "4px", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={form.coloresHilo.includes(c.id)}
+                          onChange={(e) => {
+                            setForm((prev) => {
+                              const next = e.target.checked
+                                ? [...prev.coloresHilo, c.id]
+                                : prev.coloresHilo.filter((id) => id !== c.id);
+                              const imgs = { ...(prev.imagenesPorColor || {}) };
+                              if (!e.target.checked) delete imgs[c.id];
+                              return { ...prev, coloresHilo: next, imagenesPorColor: imgs };
+                            });
+                          }}
+                        />
+                        <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: c.hex }} />
+                        <span style={{ fontSize: "0.85rem" }}>{c.nombre}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               {form.linea === "origen" && form.coloresHilo.length > 0 && (
                 <div className="admin-form-field admin-form-field--full">
                   <p style={{ marginBottom: "0.75rem", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(17,17,17,0.6)" }}>Imágenes por variante de color</p>
