@@ -91,4 +91,4 @@ do $$ begin create policy "anon_all_perfiles" on perfiles for all to anon using 
 insert into storage.buckets (id, name, public) values ('productos', 'productos', true) on conflict (id) do nothing;
 do $$ begin create policy "auth_storage_productos" on storage.objects for all to authenticated using (bucket_id = 'productos') with check (bucket_id = 'productos'); exception when duplicate_object then null; end $$;
 
-alter table pedidos add column if not exists transportadora text;
+alter table productos add column if not exists imagenes_por_color jsonb;

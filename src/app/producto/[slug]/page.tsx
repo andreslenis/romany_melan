@@ -24,7 +24,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     material?: string; categoria?: string; badge?: string; narrativa?: string;     especificaciones?: { material?: string; componentes?: string; piedra?: string };
     tallas?: (string | number)[];
     imagen?: string; imagenes?: string[]; colorHilo?: string; colores_hilo?: string[]; modoAcceso?: string; insignia?: string;
-    grupo?: string; coleccion_id?: string;
+    grupo?: string; coleccion_id?: string; imagenes_por_color?: Record<string, string>;
   };
 
   const [productoBase, setProductoBase] = useState<DBProd | null>(null);
@@ -145,9 +145,20 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
 
   const imagenPrincipalVar = (Array.isArray(producto.imagenes) && producto.imagenes.length ? producto.imagenes[0] : producto.imagen) as string;
 
-  const allImages = Array.isArray(producto.imagenes) && producto.imagenes.length > 0
-    ? [imagenPrincipalVar, ...producto.imagenes.filter((img: string) => img !== imagenPrincipalVar)]
-    : [imagenPrincipalVar];
+  const allImages = (() => {
+    const imgsPorColor = (producto as unknown as Record<string, unknown>)?.imagenes_por_color as Record<string, string> | undefined;
+    if (imgsPorColor && colorHilo && imgsPorColor[colorHilo]) {
+      const colorImg = imgsPorColor[colorHilo];
+      const base = Array.isArray(producto.imagenes) && producto.imagenes.length > 0
+        ? [colorImg, ...producto.imagenes.filter((img: string) => img !== colorImg)]
+        : [colorImg];
+      return base;
+    }
+    if (Array.isArray(producto.imagenes) && producto.imagenes.length > 0) {
+      return [imagenPrincipalVar, ...producto.imagenes.filter((img: string) => img !== imagenPrincipalVar)];
+    }
+    return [imagenPrincipalVar];
+  })();
 
   const handleAddToCart = () => {
     const prodAny = producto as unknown as Record<string, unknown>;

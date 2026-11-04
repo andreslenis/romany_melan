@@ -18,6 +18,7 @@ type Producto = {
   descripcion_corta?: string;
   historia_narrativa?: string;
   imagenes?: unknown;
+  imagenes_por_color?: unknown;
   especificaciones?: { material?: string; componentes?: string; piedra?: string };
   tallas?: unknown;
   colores_hilo?: unknown;
@@ -45,9 +46,11 @@ export default function AdminProductos() {
     tamanoGema: "",
     requiereTalla: false,
     tallas: "",
-    coloresHilo: [] as string[]
+    coloresHilo: [] as string[],
+    imagenesPorColor: {} as Record<string, string>
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [colorFiles, setColorFiles] = useState<Record<string, File | null>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -81,8 +84,13 @@ export default function AdminProductos() {
   const guardar = async () => {
     try {
       const uploadedUrls: string[] = [];
+      const totalAfter = form.imagenes.length + selectedFiles.length;
+      if (totalAfter > 3) {
+        alert("Máximo 3 fotos por producto");
+        return;
+      }
       for (const file of selectedFiles) {
-        const path = Date.now() + "-" + file.name;
+        const path = Date.now() + "-" + Math.random().toString(36).slice(2) + "-" + file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
         const { error: upErr } = await supabase.storage.from("productos").upload(path, file);
         if (upErr) {
           alert("Error subiendo imagen: " + upErr.message);
@@ -91,19 +99,34 @@ export default function AdminProductos() {
         const { data: pub } = supabase.storage.from("productos").getPublicUrl(path);
         uploadedUrls.push(pub.publicUrl);
       }
-      const imagenes = [...form.imagenes, ...uploadedUrls];
+      const imagenes = [...form.imagenes, ...uploadedUrls].slice(0, 3);
+      
+      const imagenesPorColorFinal: Record<string, string> = { ...(form.imagenesPorColor || {}) };
+      for (const [colorId, file] of Object.entries(colorFiles)) {
+        if (!file) continue;
+        const path = Date.now() + "-" + Math.random().toString(36).slice(2) + "-" + file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const { error: upErr } = await supabase.storage.from("productos").upload(path, file);
+        if (upErr) {
+          alert("Error subiendo imagen por color: " + upErr.message);
+          return;
+        }
+        const { data: pub } = supabase.storage.from("productos").getPublicUrl(path);
+        imagenesPorColorFinal[colorId] = pub.publicUrl;
+      }
+      
        const payload = {
          coleccion_id: coleccionId || null,
          nombre: form.nombre,
           slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
          linea: form.linea === "singular" ? "SINGULAR" : "ORIGEN",
-         grupo: form.grupo || null,
+          grupo: form.grupo || null,
         precio_cop: Number(form.precio) || 0,
         stock_disponible: Number(form.stock) || 0,
         historia_narrativa: form.historia,
         descripcion_corta: form.descripcion_corta,
         activo: form.activo,
         imagenes,
+        imagenes_por_color: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
         especificaciones: {
           material: form.tipoHilo,
           componentes: form.componentes,
@@ -111,7 +134,7 @@ export default function AdminProductos() {
         },
         tallas: form.requiereTalla ? form.tallas.split(",").map((t) => t.trim()).filter(Boolean) : [],
          admite_color_hilo: form.linea === "origen",
-         colores_hilo: form.linea === "origen" ? [form.tipoHilo] : []
+         colores_hilo: form.linea === "origen" ? form.coloresHilo : []
       };
       if (editingId) {
         const { data, error } = await supabase.from("productos").update(payload).eq("id", editingId).select();
@@ -128,8 +151,9 @@ export default function AdminProductos() {
         }
         if (data && data[0]) setProductos((prev) => [data[0] as Producto, ...prev]);
       }
-      setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] });
+      setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
       setSelectedFiles([]);
+      setColorFiles({});
       if (fileInputRef.current) fileInputRef.current.value = "";
       setEditingId(null);
       load();
@@ -142,6 +166,8 @@ export default function AdminProductos() {
   const editar = (p: Producto) => {
     if (p.coleccion_id) setColeccionId(p.coleccion_id);
     setEditingId(p.id);
+    const imgs = Array.isArray(p.imagenes) ? (p.imagenes as string[]) : [];
+    const imgsPorColor = p.imagenes_por_color && typeof p.imagenes_por_color === 'object' ? (p.imagenes_por_color as Record<string, string>) : {};
     setForm({
       nombre: p.nombre,
        slug: p.slug || "",
@@ -153,14 +179,18 @@ export default function AdminProductos() {
       historia: p.historia_narrativa || "",
       descripcion_corta: p.descripcion_corta || "",
       activo: p.activo !== false,
-      imagenes: Array.isArray(p.imagenes) ? (p.imagenes as string[]) : [],
+      imagenes: imgs.slice(0, 3),
       tipoHilo: String((p.especificaciones && p.especificaciones.material) || ""),
       componentes: String((p.especificaciones && p.especificaciones.componentes) || ""),
       tamanoGema: String((p.especificaciones && p.especificaciones.piedra) || ""),
       requiereTalla: Array.isArray(p.tallas) && (p.tallas as unknown[]).length > 0,
       tallas: Array.isArray(p.tallas) ? (p.tallas as string[]).join(", ") : "",
-      coloresHilo: Array.isArray(p.colores_hilo) ? (p.colores_hilo as string[]) : []
+      coloresHilo: Array.isArray(p.colores_hilo) ? (p.colores_hilo as string[]) : [],
+      imagenesPorColor: imgsPorColor
     });
+    setSelectedFiles([]);
+    setColorFiles({});
+    if (fileInputRef.current) fileInputRef.current.value = "";
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   };
 
@@ -285,8 +315,29 @@ export default function AdminProductos() {
                 <input className="form-input" type="number" placeholder="Stock" value={form.stock} onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })} />
               </div>
               <div className="admin-form-field admin-form-field--full">
-                <label className="admin-form-label">Imágenes</label>
-                <input ref={fileInputRef} className="form-input" type="file" accept="image/*" multiple onChange={(e) => setSelectedFiles(Array.from(e.target.files || []))} />
+                <label className="admin-form-label">Imágenes (máx. 3)</label>
+                {form.imagenes.length > 0 && (
+                  <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+                    {form.imagenes.map((url, idx) => (
+                      <div key={idx} style={{ position: "relative", width: "120px", height: "120px" }}>
+                        <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+                        <button
+                          type="button"
+                          onClick={() => setForm((prev) => ({ ...prev, imagenes: prev.imagenes.filter((_, i) => i !== idx) }))}
+                          style={{ position: "absolute", top: "4px", right: "4px", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: "50%", width: "20px", height: "20px", cursor: "pointer" }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <input ref={fileInputRef} className="form-input" type="file" accept="image/*" multiple disabled={form.imagenes.length >= 3} onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  const available = 3 - form.imagenes.length;
+                  setSelectedFiles(files.slice(0, available));
+                }} />
+                <p style={{ fontSize: "0.75rem", color: "rgba(0,0,0,0.5)", marginTop: "0.25rem" }}>{form.imagenes.length} / 3 imágenes</p>
               </div>
               <div className="admin-form-field admin-form-field--full">
                 <label className="admin-form-label">Descripción corta</label>
@@ -317,21 +368,46 @@ export default function AdminProductos() {
                   <input className="form-input" placeholder="Tallas separadas por coma (S, M, L)" value={form.tallas} onChange={(e) => setForm({ ...form, tallas: e.target.value })} />
                 )}
               </div>
-              {form.linea === "origen" && (
+              {form.linea === "origen" && form.coloresHilo.length > 0 && (
                 <div className="admin-form-field admin-form-field--full">
-                  <p style={{ marginBottom: "0.5rem", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(17,17,17,0.6)" }}>Colores de hilo disponibles:</p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                    {COLORES_HILO.map((c) => (
-                      <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                        <input type="checkbox" checked={form.coloresHilo.includes(c.id)} onChange={(e) => {
-                          setForm((prev) => ({
-                            ...prev,
-                            coloresHilo: e.target.checked ? [...prev.coloresHilo, c.id] : prev.coloresHilo.filter((x) => x !== c.id)
-                          }));
-                        }} />
-                        <span>{c.nombre}</span>
-                      </label>
-                    ))}
+                  <p style={{ marginBottom: "0.75rem", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(17,17,17,0.6)" }}>Imágenes por variante de color</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    {form.coloresHilo.map((colorId) => {
+                      const color = COLORES_HILO.find((c) => c.id === colorId);
+                      return (
+                        <div key={colorId} style={{ padding: "0.75rem", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "4px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                            <span style={{ width: "16px", height: "16px", borderRadius: "50%", background: color?.hex || "#ccc" }}></span>
+                            <span style={{ fontWeight: 500 }}>{color?.nombre || colorId}</span>
+                          </div>
+                          {form.imagenesPorColor[colorId] && (
+                            <div style={{ position: "relative", width: "100px", height: "100px", marginBottom: "0.5rem" }}>
+                              <img src={form.imagenesPorColor[colorId]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "4px" }} />
+                              <button
+                                type="button"
+                                onClick={() => setForm((prev) => {
+                                  const next = { ...(prev.imagenesPorColor || {}) };
+                                  delete next[colorId];
+                                  return { ...prev, imagenesPorColor: next };
+                                })}
+                                style={{ position: "absolute", top: "4px", right: "4px", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: "50%", width: "18px", height: "18px", cursor: "pointer" }}
+                              >
+                                ×
+                              </button>
+                            </div>
+                          )}
+                          <input
+                            className="form-input"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              setColorFiles((prev) => ({ ...prev, [colorId]: file }));
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
