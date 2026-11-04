@@ -98,6 +98,7 @@ export default function AdminProductos() {
         const { data: pub } = supabase.storage.from("productos").getPublicUrl(path);
         uploadedUrls.push(pub.publicUrl);
       }
+      const imagenesPorColorFinal: Record<string, string> = { ...(form.imagenesPorColor || {}) };
       const payload = {
          coleccion_id: coleccionId || null,
          nombre: form.nombre,
@@ -109,7 +110,7 @@ export default function AdminProductos() {
         historia_narrativa: form.historia,
         descripcion_corta: form.descripcion_corta,
         activo: form.activo,
-        imagenes,
+        imagenes: [...(form.imagenes || []), ...[]].slice(0, 3),
         imagenes_por_color: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
         imagenesPorColor: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
         especificaciones: {
@@ -138,7 +139,6 @@ export default function AdminProductos() {
       }
       setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
       setSelectedFiles([]);
-      setColorFiles({});
       setEditingId(null);
       load();
       alert("Producto guardado correctamente");
