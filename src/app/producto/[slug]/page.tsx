@@ -146,7 +146,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   const imagenPrincipalVar = (Array.isArray(producto.imagenes) && producto.imagenes.length ? producto.imagenes[0] : producto.imagen) as string;
 
   const allImages = (() => {
-    const imgsPorColor = (producto as unknown as Record<string, unknown>)?.imagenes_por_color as Record<string, string> | undefined;
+    const imgsPorColor = (producto as unknown as Record<string, unknown>)?.imagenesPorColor as Record<string, string> | undefined ||
+      (producto as unknown as Record<string, unknown>)?.imagenes_por_color as Record<string, string> | undefined;
     if (imgsPorColor && colorHilo && imgsPorColor[colorHilo]) {
       const colorImg = imgsPorColor[colorHilo];
       const base = Array.isArray(producto.imagenes) && producto.imagenes.length > 0

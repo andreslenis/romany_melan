@@ -19,6 +19,7 @@ type Producto = {
   historia_narrativa?: string;
   imagenes?: unknown;
   imagenes_por_color?: unknown;
+  imagenesPorColor?: unknown;
   especificaciones?: { material?: string; componentes?: string; piedra?: string };
   tallas?: unknown;
   colores_hilo?: unknown;
@@ -118,8 +119,7 @@ export default function AdminProductos() {
         descripcion_corta: form.descripcion_corta,
         activo: form.activo,
          imagenes: [...(form.imagenes || []), ...uploadedUrls].slice(0, 3),
-        imagenes_por_color: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
-        imagenesPorColor: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
+         imagenesPorColor: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
         especificaciones: {
           material: form.tipoHilo,
           componentes: form.componentes,
@@ -158,7 +158,7 @@ export default function AdminProductos() {
     if (p.coleccion_id) setColeccionId(p.coleccion_id);
     setEditingId(p.id);
     const imgs = Array.isArray(p.imagenes) ? (p.imagenes as string[]) : [];
-    const imgsPorColor = p.imagenes_por_color && typeof p.imagenes_por_color === 'object' ? (p.imagenes_por_color as Record<string, string>) : {};
+    const imgsPorColor = (p.imagenesPorColor && typeof p.imagenesPorColor === 'object' ? (p.imagenesPorColor as Record<string, string>) : (p.imagenes_por_color && typeof p.imagenes_por_color === 'object' ? (p.imagenes_por_color as Record<string, string>) : {}));
     setForm({
       nombre: p.nombre,
        slug: p.slug || "",
