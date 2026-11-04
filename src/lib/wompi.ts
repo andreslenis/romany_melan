@@ -60,7 +60,7 @@ export interface WompiTransaccion {
 export interface WompiConfig {
   locale: string;
   currency: string;
-  environment: "TEST" | "PROD";
+  environment: "test" | "production";
   publicKey: string;
   container: string;
   redirectUrl?: string;

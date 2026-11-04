@@ -51,7 +51,7 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
         new window.WompiCheckout({
           locale: "es-CO",
           currency: "COP",
-          environment: WOMPI_ENVIRONMENT,
+          environment: WOMPI_ENVIRONMENT === "PROD" ? "production" : "test",
           publicKey: WOMPI_PUBLIC_KEY,
           container: "#wompi-widget",
           ...(WOMPI_REDIRECT_URL ? { redirectUrl: WOMPI_REDIRECT_URL } : {}),
@@ -148,13 +148,7 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
               <button
                 type="button"
                 className="pdp-add-btn"
-                onClick={() =>
-                  onPagado({
-                    referencia,
-                    estado: "APPROVED",
-                    metodo: metodoLabelActual,
-                  })
-                }
+                  onClick={() => window.location.reload()}
               >
                 Continuar
               </button>
