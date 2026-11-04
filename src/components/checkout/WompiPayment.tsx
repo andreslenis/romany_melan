@@ -29,12 +29,28 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
   const [estadoWidget, setEstadoWidget] = useState<
     "idle" | "cargando" | "listo" | "error"
   >(wompiIsConfigured ? "cargando" : "idle");
+  const [signature, setSignature] = useState<string | null>(null);
+  useEffect(() => {
+    if (!wompiIsConfigured) return;
+    (async () => {
+      try {
+        const res = await fetch("/api/wompi/integrity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reference: referencia, amountInCents: Math.round(total * 100), currency: "COP" }),
+        });
+        const data = await res.json();
+        if (data.signature) setSignature(data.signature);
+      } catch {}
+    })();
+  }, [referencia, total]);
   const [metodoSeleccionado, setMetodoSeleccionado] = useState<string>(
     METODOS_PAGO[0]?.id || "card"
   );
 
   useEffect(() => {
     if (!wompiIsConfigured) return;
+    if (!signature) return;
 
     let cancelado = false;
 
@@ -55,6 +71,7 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
           reference: referencia,
           environment: WOMPI_ENVIRONMENT === "PROD" ? "production" : "test",
           publicKey: WOMPI_PUBLIC_KEY,
+          signature: { integrity: signature },
           container: "#wompi-widget",
           ...(WOMPI_REDIRECT_URL ? { redirectUrl: WOMPI_REDIRECT_URL } : {}),
           onCompleted: ({ transaction }) => {
@@ -80,7 +97,7 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
     return () => {
       cancelado = true;
     };
-  }, [referencia, onPagado, metodoSeleccionado]);
+  }, [referencia, onPagado, metodoSeleccionado, signature]);
 
   const metodoLabelActual =
     METODOS_PAGO.find((m) => m.id === metodoSeleccionado)?.label ||

@@ -65,7 +65,7 @@ export interface WompiConfig {
   amountInCents?: number;
   reference?: string;
   container: string;
-  redirectUrl?: string;
+  signature?: { integrity: string };
   onCompleted?: (response: { transaction: WompiTransaccion }) => void;
   onError?: (error: unknown) => void;
 }
