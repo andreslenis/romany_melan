@@ -50,7 +50,6 @@ export default function AdminProductos() {
     imagenesPorColor: {} as Record<string, string>
   });
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [colorFiles, setColorFiles] = useState<Record<string, File | null>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -140,7 +139,6 @@ export default function AdminProductos() {
       setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
       setSelectedFiles([]);
       setColorFiles({});
-      if (fileInputRef.current) fileInputRef.current.value = "";
       setEditingId(null);
       load();
       alert("Producto guardado correctamente");
@@ -175,7 +173,6 @@ export default function AdminProductos() {
       imagenesPorColor: imgsPorColor
     });
     setSelectedFiles([]);
-    setColorFiles({});
     if (fileInputRef.current) fileInputRef.current.value = "";
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   };
@@ -212,16 +209,15 @@ export default function AdminProductos() {
             </div>
             <div className="admin-page-header-actions">
               <Link href="/admin/dashboard" className="cta-btn admin-btn--back">Volver</Link>
-              <button
-                className="cta-btn admin-btn--new"
-                onClick={() => {
-                  setEditingId(null);
-                  setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
-                  setSelectedFiles([]);
-                  setColorFiles({});
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-              >
+                <button
+                  className="cta-btn admin-btn--new"
+                  onClick={() => {
+                    setEditingId(null);
+                    setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
+                    setSelectedFiles([]);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                >
                 + Nuevo Producto
               </button>
             </div>
@@ -390,7 +386,17 @@ export default function AdminProductos() {
                             accept="image/*"
                             onChange={(e) => {
                               const file = e.target.files?.[0] || null;
-                              setColorFiles((prev) => ({ ...prev, [colorId]: file }));
+                              if (!file) return;
+                              (async () => {
+                                const path = Date.now() + "-" + Math.random().toString(36).slice(2) + "-" + file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+                                const { error: upErr } = await supabase.storage.from("productos").upload(path, file);
+                                if (upErr) {
+                                  alert("Error subiendo imagen por color: " + upErr.message);
+                                  return;
+                                }
+                                const { data: pub } = supabase.storage.from("productos").getPublicUrl(path);
+                                setForm((prev) => ({ ...prev, imagenesPorColor: { ...(prev.imagenesPorColor || {}), [colorId]: pub.publicUrl } }));
+                              })();
                             }}
                           />
                         </div>
