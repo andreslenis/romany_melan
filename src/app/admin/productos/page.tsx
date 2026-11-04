@@ -230,8 +230,10 @@ export default function AdminProductos() {
                 className="cta-btn admin-btn--new"
                 onClick={() => {
                   setEditingId(null);
-                  setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [] });
+                  setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
                   setSelectedFiles([]);
+                  setColorFiles({});
+                  if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
               >
                 + Nuevo Producto
