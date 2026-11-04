@@ -99,22 +99,7 @@ export default function AdminProductos() {
         const { data: pub } = supabase.storage.from("productos").getPublicUrl(path);
         uploadedUrls.push(pub.publicUrl);
       }
-      const imagenes = [...form.imagenes, ...uploadedUrls].slice(0, 3);
-      
-      const imagenesPorColorFinal: Record<string, string> = { ...(form.imagenesPorColor || {}) };
-      for (const [colorId, file] of Object.entries(colorFiles)) {
-        if (!file) continue;
-        const path = Date.now() + "-" + Math.random().toString(36).slice(2) + "-" + file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const { error: upErr } = await supabase.storage.from("productos").upload(path, file);
-        if (upErr) {
-          alert("Error subiendo imagen por color: " + upErr.message);
-          return;
-        }
-        const { data: pub } = supabase.storage.from("productos").getPublicUrl(path);
-        imagenesPorColorFinal[colorId] = pub.publicUrl;
-      }
-      
-       const payload = {
+      const payload = {
          coleccion_id: coleccionId || null,
          nombre: form.nombre,
           slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
@@ -125,6 +110,7 @@ export default function AdminProductos() {
         historia_narrativa: form.historia,
         descripcion_corta: form.descripcion_corta,
         activo: form.activo,
+        imagenes,
         imagenes_por_color: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
         imagenesPorColor: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
         especificaciones: {
