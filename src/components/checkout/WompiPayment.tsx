@@ -51,6 +51,8 @@ export default function WompiPayment({ total, referencia, onPagado }: Props) {
         new window.WompiCheckout({
           locale: "es-CO",
           currency: "COP",
+          amountInCents: Math.round(total * 100),
+          reference: referencia,
           environment: WOMPI_ENVIRONMENT === "PROD" ? "production" : "test",
           publicKey: WOMPI_PUBLIC_KEY,
           container: "#wompi-widget",

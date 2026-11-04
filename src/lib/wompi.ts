@@ -62,6 +62,8 @@ export interface WompiConfig {
   currency: string;
   environment: "test" | "production";
   publicKey: string;
+  amountInCents?: number;
+  reference?: string;
   container: string;
   redirectUrl?: string;
   onCompleted?: (response: { transaction: WompiTransaccion }) => void;
