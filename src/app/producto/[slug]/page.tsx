@@ -366,7 +366,10 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                   <h3 className="pdp-block-title">Color del hilo</h3>
                   <p className="pdp-color-intro">Cada hilo toma el color de un pecado, o los tonos neutros Oscuridad y Luz. Elige el que te acompaña.</p>
                   <div className="color-swatches">
-                    {COLORES_HILO.filter((c) => variantes.some((v) => Array.isArray(v.colores_hilo) && v.colores_hilo.includes(c.id))).map((opcion) => (
+                    {(COLORES_HILO.filter((c) => variantes.some((v) => Array.isArray(v.colores_hilo) && v.colores_hilo.includes(c.id))).length > 0
+                      ? COLORES_HILO.filter((c) => variantes.some((v) => Array.isArray(v.colores_hilo) && v.colores_hilo.includes(c.id)))
+                      : COLORES_HILO
+                    ).map((opcion) => (
                       <button
                         key={opcion.id}
                         type="button"
