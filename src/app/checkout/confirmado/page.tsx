@@ -6,7 +6,17 @@ import { useSearchParams } from "next/navigation";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
+import { Suspense } from "react";
+
 export default function ConfirmadoPage() {
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <ConfirmadoContent />
+    </Suspense>
+  );
+}
+
+function ConfirmadoContent() {
   const params = useSearchParams();
   const ref = params.get("ref");
   return (
