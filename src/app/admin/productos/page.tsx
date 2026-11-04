@@ -125,8 +125,8 @@ export default function AdminProductos() {
         historia_narrativa: form.historia,
         descripcion_corta: form.descripcion_corta,
         activo: form.activo,
-        imagenes,
         imagenes_por_color: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
+        imagenesPorColor: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
         especificaciones: {
           material: form.tipoHilo,
           componentes: form.componentes,
