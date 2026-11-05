@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { POST as handle } from "../../webhook/route";
 
 export async function POST(req: Request) {

@@ -66,7 +66,7 @@ function RespuestaContent() {
           attempts += 1;
           timer = setTimeout(run, POLL_MS);
         }
-      } catch (e) {
+      } catch {
         if (cancelled) return;
         setState((s) => ({ ...s, loading: false, error: "No pudimos consultar el estado del pago." }));
       }
