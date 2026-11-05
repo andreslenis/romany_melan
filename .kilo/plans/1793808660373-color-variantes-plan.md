@@ -1,15 +1,17 @@
-# Plan: Selector de variantes de color y foto por color
+# Plan: Corregir carga del Widget de Wompi
 
-## Goal
-En admin productos, permitir seleccionar variantes de color (colores de hilo) y cargar foto por cada color seleccionado. En cliente, al elegir color mostrar foto asociada (ya implementado parcialmente). Fotos iniciales solo con color original.
+## Problema
+El widget no carga porque la integración usa `new WompiCheckout({...})` con `container`, que no es el método soportado para abrir el checkout. Según la guía, el flujo correcto es crear una instancia `WidgetCheckout` y llamar `.open(callback)`.
 
-## Changes
-1. `src/app/admin/productos/page.tsx`: agregar selector de checkboxes de `COLORES_HILO` (solo línea origen) que actualice `form.coloresHilo`. La sección "Imágenes por variante de color" ya existe y se activa cuando hay colores seleccionados; exige subir foto por color. Validar que cada color seleccionado tenga foto al guardar (o marcar pendiente).
+## Cambios propuestos
+1. Actualizar `WompiPayment.tsx` para usar `new window.WidgetCheckout(config)` y un botón "Pagar con Wompi" que llame `checkout.open(callback)`.
+2. Mantener configuración obligatoria: `currency`, `amountInCents`, `reference`, `publicKey`, `signature: { integrity }`.
+3. Conservar `redirectUrl` opcional.
+4. Eliminar el contenedor `#wompi-widget` o mantenerlo solo informativo.
+5. En el callback `open`, recibir `result.transaction` y llamar `onPagado` con estado, referencia y método.
+6. Mantener manejo de error si falta firma o script no carga.
 
-2. Admin: al guardar, asegurar `imagenes_por_color` solo incluye colores seleccionados; limpiar huérfanos.
-
-3. Cliente `src/app/producto/[slug]/page.tsx`: `allImages` ya prioriza `imagenes_por_color[colorHilo]`. Verificar que fotos iniciales (imagenes) correspondan al color original; si no hay foto por color, caer a imagenes. Ya hecho.
-
-## Validation
-- Lint/typecheck.
-- Manual: crear producto origen, seleccionar colores, subir fotos, verificar cliente cambia foto al cambiar color.
+## Validación
+- Pago de prueba con tarjeta test debe abrir el widget y completar transacción.
+- No debe aparecer "No pudimos cargar el Widget".
+- Pedido se registra en BD tras `onPagado`.
