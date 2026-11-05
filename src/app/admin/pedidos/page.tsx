@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import AdminGuard from "@/components/admin/AdminGuard";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -10,6 +10,7 @@ type Pedido = {
   numero_pedido?: string;
   cliente_nombre?: string;
   cliente_email?: string;
+  cliente_telefono?: string;
   items?: unknown[];
   total_cop?: number;
   estado_pago?: string;
@@ -21,32 +22,78 @@ type Pedido = {
   created_at?: string;
 };
 
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export default function AdminPedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [selected, setSelected] = useState<Pedido | null>(null);
   const [transportadora, setTransportadora] = useState("");
   const [guia, setGuia] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const load = async () => {
-    const { data } = await supabase.from("pedidos").select("*").order("created_at", { ascending: false });
-    setPedidos(data || []);
-    setLoading(false);
-  };
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const headers = await authHeaders();
+      const res = await fetch("/api/admin/pedidos", { headers, cache: "no-store" });
+      const json = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        pedidos?: Pedido[];
+        error?: string;
+        detail?: string;
+      };
+      if (!res.ok || !json.ok) {
+        throw new Error(json.detail || json.error || `http_${res.status}`);
+      }
+      setPedidos(json.pedidos || []);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "No se pudieron cargar los pedidos.";
+      setError(msg);
+      setPedidos([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const actualizarEstado = async (id: string, estado_envio: string) => {
-    await supabase.from("pedidos").update({ estado_envio, updated_at: new Date().toISOString() }).eq("id", id);
+    setError(null);
+    const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+    const res = await fetch("/api/admin/pedidos", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ id, estado_envio }),
+    });
+    const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; detail?: string };
+    if (!res.ok || !json.ok) {
+      setError(json.detail || json.error || "No se pudo actualizar el estado.");
+      return;
+    }
     load();
   };
 
   const guardarDespacho = async () => {
     if (!selected) return;
-    await supabase.from("pedidos").update({ transportadora, guia_rastreo: guia, updated_at: new Date().toISOString() }).eq("id", selected.id);
+    setError(null);
+    const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+    const res = await fetch("/api/admin/pedidos", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ id: selected.id, transportadora, guia_rastreo: guia }),
+    });
+    const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; detail?: string };
+    if (!res.ok || !json.ok) {
+      setError(json.detail || json.error || "No se pudo guardar el despacho.");
+      return;
+    }
     setSelected(null);
     load();
-    alert("Despacho guardado");
   };
 
   return (
@@ -67,6 +114,12 @@ export default function AdminPedidos() {
             </div>
             <Link href="/admin/dashboard" className="cta-btn admin-btn--back">Volver</Link>
           </section>
+
+          {error && (
+            <p style={{ color: "#b00020", marginBottom: "1rem" }} role="alert">
+              {error}
+            </p>
+          )}
 
           <div className="admin-product-table-wrap">
             <table className="admin-product-table">

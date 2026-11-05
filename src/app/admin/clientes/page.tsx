@@ -34,18 +34,46 @@ type Cliente = {
   ultimo: string;
 };
 
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export default function AdminClientes() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
   const [filtro, setFiltro] = useState<"todos" | "miembros" | "invitados">("todos");
   const [selected, setSelected] = useState<Cliente | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
-      const { data: p } = await supabase.from("pedidos").select("*");
-      const { data: prof } = await supabase.from("perfiles").select("*");
-      setPedidos(p || []);
-      setPerfiles(prof || []);
+      setError(null);
+      try {
+        const headers = await authHeaders();
+        const res = await fetch("/api/admin/clientes", { headers, cache: "no-store" });
+        const json = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          pedidos?: Pedido[];
+          perfiles?: Perfil[];
+          error?: string;
+          detail?: string;
+        };
+        if (!res.ok || !json.ok) {
+          throw new Error(json.detail || json.error || `http_${res.status}`);
+        }
+        setPedidos(json.pedidos || []);
+        setPerfiles(json.perfiles || []);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "No se pudieron cargar los clientes.";
+        setError(msg);
+        setPedidos([]);
+        setPerfiles([]);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
@@ -91,68 +119,80 @@ export default function AdminClientes() {
           <Link href="/admin/dashboard" className="cta-btn">Volver</Link>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "2rem" }}>
-          <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", padding: "1.5rem" }}>
-            <div style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(0,0,0,0.5)" }}>Total Clientes</div>
-            <div style={{ fontSize: "2rem", fontWeight: 600 }}>{totalClientes}</div>
-          </div>
-          <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", padding: "1.5rem" }}>
-            <div style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(0,0,0,0.5)" }}>Miembros del Círculo</div>
-            <div style={{ fontSize: "2rem", fontWeight: 600 }}>{totalMiembros}</div>
-          </div>
-          <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", padding: "1.5rem" }}>
-            <div style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(0,0,0,0.5)" }}>Compradores Invitados</div>
-            <div style={{ fontSize: "2rem", fontWeight: 600 }}>{totalInvitados}</div>
-          </div>
-        </div>
+        {error && (
+          <p style={{ color: "#b00020", marginBottom: "1rem" }} role="alert">
+            {error}
+          </p>
+        )}
 
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-          {(["todos", "miembros", "invitados"] as const).map((f) => (
-            <button key={f} className="cta-btn" style={{ opacity: filtro === f ? 1 : 0.5 }} onClick={() => setFiltro(f)}>
-              {f === "todos" ? "Todos" : f === "miembros" ? "Solo Miembros" : "Invitados"}
-            </button>
-          ))}
-        </div>
+        {loading ? (
+          <p>Cargando…</p>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: "1rem", marginBottom: "2rem" }}>
+              <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", padding: "1.5rem" }}>
+                <div style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(0,0,0,0.5)" }}>Total Clientes</div>
+                <div style={{ fontSize: "2rem", fontWeight: 600 }}>{totalClientes}</div>
+              </div>
+              <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", padding: "1.5rem" }}>
+                <div style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(0,0,0,0.5)" }}>Miembros del Círculo</div>
+                <div style={{ fontSize: "2rem", fontWeight: 600 }}>{totalMiembros}</div>
+              </div>
+              <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", padding: "1.5rem" }}>
+                <div style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(0,0,0,0.5)" }}>Compradores Invitados</div>
+                <div style={{ fontSize: "2rem", fontWeight: 600 }}>{totalInvitados}</div>
+              </div>
+            </div>
 
-        <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", overflow: "hidden" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "rgba(0,0,0,0.02)" }}>
-                <th style={{ padding: "1rem", textAlign: "left" }}>Nombre</th>
-                <th style={{ padding: "1rem", textAlign: "left" }}>Email / Teléfono</th>
-                <th style={{ padding: "1rem", textAlign: "left" }}>Estado</th>
-                <th style={{ padding: "1rem", textAlign: "center" }}>Pedidos</th>
-                <th style={{ padding: "1rem", textAlign: "right" }}>Total COP</th>
-                <th style={{ padding: "1rem", textAlign: "left" }}>Último pedido</th>
-                <th style={{ padding: "1rem", textAlign: "right" }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clientes.map((c) => (
-                <tr key={c.email} style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
-                  <td style={{ padding: "1rem" }}>{c.nombre}</td>
-                  <td style={{ padding: "1rem" }}>
-                    <div>{c.email}</div>
-                    <div style={{ fontSize: "0.8rem", color: "rgba(0,0,0,0.5)" }}>{c.telefono}</div>
-                  </td>
-                  <td style={{ padding: "1rem" }}>
-                    {c.esMiembro ? (
-                      <span style={{ background: "#c9a227", color: "#fff", padding: "0.25rem 0.6rem", borderRadius: "999px", fontSize: "0.75rem" }}>Miembro del Círculo</span>
-                    ) : (
-                      <span style={{ background: "#999", color: "#fff", padding: "0.25rem 0.6rem", borderRadius: "999px", fontSize: "0.75rem" }}>Comprador Invitado</span>
-                    )}
-                  </td>
-                  <td style={{ padding: "1rem", textAlign: "center" }}>{c.pedidos.length}</td>
-                  <td style={{ padding: "1rem", textAlign: "right" }}>${c.total.toLocaleString("es-CO")} COP</td>
-                  <td style={{ padding: "1rem" }}>{c.ultimo ? new Date(c.ultimo).toLocaleDateString("es-CO") : "-"}</td>
-                  <td style={{ padding: "1rem", textAlign: "right" }}>
-                    <button onClick={() => setSelected(c)} style={{ color: "var(--color-accent)" }}>Ver Historial</button>
-                  </td>
-                </tr>
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+              {(["todos", "miembros", "invitados"] as const).map((f) => (
+                <button key={f} className="cta-btn" style={{ opacity: filtro === f ? 1 : 0.5 }} onClick={() => setFiltro(f)}>
+                  {f === "todos" ? "Todos" : f === "miembros" ? "Solo Miembros" : "Invitados"}
+                </button>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+
+            <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: "0.75rem", overflow: "hidden" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "rgba(0,0,0,0.02)" }}>
+                    <th style={{ padding: "1rem", textAlign: "left" }}>Nombre</th>
+                    <th style={{ padding: "1rem", textAlign: "left" }}>Email / Teléfono</th>
+                    <th style={{ padding: "1rem", textAlign: "left" }}>Estado</th>
+                    <th style={{ padding: "1rem", textAlign: "center" }}>Pedidos</th>
+                    <th style={{ padding: "1rem", textAlign: "right" }}>Total COP</th>
+                    <th style={{ padding: "1rem", textAlign: "left" }}>Último pedido</th>
+                    <th style={{ padding: "1rem", textAlign: "right" }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clientes.map((c) => (
+                    <tr key={c.email} style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+                      <td style={{ padding: "1rem" }}>{c.nombre}</td>
+                      <td style={{ padding: "1rem" }}>
+                        <div>{c.email}</div>
+                        <div style={{ fontSize: "0.8rem", color: "rgba(0,0,0,0.5)" }}>{c.telefono}</div>
+                      </td>
+                      <td style={{ padding: "1rem" }}>
+                        {c.esMiembro ? (
+                          <span style={{ background: "#c9a227", color: "#fff", padding: "0.25rem 0.6rem", borderRadius: "999px", fontSize: "0.75rem" }}>Miembro del Círculo</span>
+                        ) : (
+                          <span style={{ background: "#999", color: "#fff", padding: "0.25rem 0.6rem", borderRadius: "999px", fontSize: "0.75rem" }}>Comprador Invitado</span>
+                        )}
+                      </td>
+                      <td style={{ padding: "1rem", textAlign: "center" }}>{c.pedidos.length}</td>
+                      <td style={{ padding: "1rem", textAlign: "right" }}>${c.total.toLocaleString("es-CO")} COP</td>
+                      <td style={{ padding: "1rem" }}>{c.ultimo ? new Date(c.ultimo).toLocaleDateString("es-CO") : "-"}</td>
+                      <td style={{ padding: "1rem", textAlign: "right" }}>
+                        <button onClick={() => setSelected(c)} style={{ color: "var(--color-accent)" }}>Ver Historial</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
 
         {selected && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }} onClick={() => setSelected(null)}>

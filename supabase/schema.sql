@@ -92,8 +92,8 @@ alter table perfiles enable row level security;
 do $$ begin create policy "auth_all_colecciones" on colecciones for all to authenticated using (true) with check (true); exception when duplicate_object then null; end $$;
 do $$ begin create policy "auth_all_productos" on productos for all to authenticated using (true) with check (true); exception when duplicate_object then null; end $$;
 do $$ begin create policy "anon_all_productos" on productos for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
-do $$ begin create policy "anon_all_pedidos" on pedidos for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
-do $$ begin create policy "anon_all_perfiles" on perfiles for all to anon using (true) with check (true); exception when duplicate_object then null; end $$;
+-- pedidos/perfiles: sin políticas anon/authenticated; acceso via service_role en rutas server (admin, checkout, webhooks).
+
 insert into storage.buckets (id, name, public) values ('productos', 'productos', true) on conflict (id) do nothing;
 do $$ begin create policy "auth_storage_productos" on storage.objects for all to authenticated using (bucket_id = 'productos') with check (bucket_id = 'productos'); exception when duplicate_object then null; end $$;
 
