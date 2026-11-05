@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
@@ -10,20 +9,16 @@ import CheckoutForm, {
   datosIniciales,
   type ModoRegistro,
 } from "@/components/checkout/CheckoutForm";
-import WompiPayment, {
-  type ResultadoPago,
-} from "@/components/checkout/WompiPayment";
+import WebCheckoutForm from "@/components/checkout/WebCheckoutForm";
 import { useCart } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
 import { randomId } from "@/lib/storage";
 import type { DireccionEnvio } from "@/lib/types";
-import { supabase } from "@/lib/supabase/client";
 import { formatCOP } from "@/utils/format";
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const { items, subtotal, hydrated, clear } = useCart();
-  const { perfil, registrar, crearPedido } = usePerfil();
+  const { items, subtotal, hydrated } = useCart();
+  const { perfil, registrar } = usePerfil();
 
   const [paso, setPaso] = useState<1 | 2>(1);
   const [modo, setModo] = useState<ModoRegistro>("miembro");
@@ -54,41 +49,6 @@ export default function CheckoutPage() {
     }
     setPaso(2);
   }, [modo, datos, registrar]);
-
-   const handlePagado = useCallback(
-     async (resultado: ResultadoPago) => {
-       const pedido = crearPedido({
-         items,
-         total: subtotal,
-         direccion: datos,
-         metodoPago: resultado.metodo,
-         referencia: resultado.referencia || referencia,
-         esMiembro: modo === "miembro",
-       });
-       clear();
-       try {
-         await supabase.from("pedidos").insert({
-           numero_pedido: pedido.referencia,
-           cliente_nombre: datos.nombre,
-           cliente_email: datos.email,
-           cliente_telefono: datos.telefono,
-           direccion_envio: datos,
-           items: items,
-           total_cop: subtotal,
-           wompi_transaction_id: resultado.referencia,
-           estado_pago: "APROBADO",
-         });
-       } catch (e) {
-         console.error("Error guardando pedido", e);
-       }
-       if (modo === "invitado") {
-         router.push(`/checkout/confirmado?ref=${encodeURIComponent(pedido.referencia)}`);
-       } else {
-         router.push(`/mi-perfil?pedido=${pedido.id}`);
-       }
-     },
-     [crearPedido, items, subtotal, datos, modo, referencia, clear, router]
-   );
 
   if (!hydrated) {
     return (
@@ -174,10 +134,11 @@ export default function CheckoutPage() {
                 >
                   ← Volver a los datos de envío
                 </button>
-                <WompiPayment
+                <WebCheckoutForm
                   total={subtotal}
                   referencia={referencia}
-                  onPagado={handlePagado}
+                  items={items}
+                  datos={datos}
                 />
               </div>
               <aside className="checkout-aside">
