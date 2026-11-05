@@ -1,24 +1,22 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
-
-function getNested(obj: Record<string, unknown>, path: string): unknown {
-  let current: Record<string, unknown> | undefined = obj;
-  for (const key of path.split(".")) {
-    if (current === null || current === undefined || typeof current !== "object") {
-      return undefined;
-    }
-    current = current[key] as Record<string, unknown> | undefined;
-  }
-  return current;
-}
+import { supabaseAdmin } from "@/lib/supabase/server";
+import { getNested, verifyWompiEventSignature } from "@/lib/wompi/server";
+import { applyWompiTransactionToPedido } from "@/lib/wompi/postpago";
 
 export async function POST(req: Request) {
   const secret = process.env.WOMPI_EVENT_SECRET || "";
   if (!secret) {
+    console.error("[wompi/webhook] WOMPI_EVENT_SECRET not configured");
     return NextResponse.json({ error: "Event secret not configured" }, { status: 500 });
   }
 
-  let body: { event?: string; data?: Record<string, unknown>; signature?: { properties?: string[]; checksum?: string }; timestamp?: number; environment?: string };
+  let body: {
+    event?: string;
+    data?: Record<string, unknown>;
+    signature?: { properties?: string[]; checksum?: string };
+    timestamp?: number;
+    environment?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -26,31 +24,23 @@ export async function POST(req: Request) {
   }
 
   const { data, signature, timestamp } = body;
-  const providedChecksum =
-    signature?.checksum ?? req.headers.get("x-event-checksum");
+  const providedChecksum = signature?.checksum ?? req.headers.get("x-event-checksum");
   const properties = signature?.properties ?? [];
 
-  let isValid = false;
-
-  if (data && providedChecksum && properties.length > 0 && timestamp !== undefined) {
-    const parts: string[] = [];
-    for (const prop of properties) {
-      const value = getNested(data as Record<string, unknown>, prop);
-      parts.push(value === undefined || value === null ? "" : String(value));
-    }
-    parts.push(String(timestamp));
-    parts.push(secret);
-
-    const concatenated = parts.join("");
-    const calculated = crypto.createHash("sha256").update(concatenated).digest("hex");
-    isValid = calculated === providedChecksum;
-  }
+  const isValid = verifyWompiEventSignature({
+    data,
+    properties,
+    timestamp,
+    providedChecksum,
+    secret,
+  });
 
   if (!isValid) {
+    console.warn("[wompi/webhook] invalid signature");
     return NextResponse.json({ received: true }, { status: 200 });
   }
 
-  const transaction = (data as Record<string, unknown> | undefined)?.["transaction"] as
+  const transaction = getNested((data ?? {}) as Record<string, unknown>, "transaction") as
     | Record<string, unknown>
     | undefined;
   if (!transaction) {
@@ -65,21 +55,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true }, { status: 200 });
   }
 
-  try {
-    const { supabaseAdmin } = await import("@/lib/supabase/server");
-    await supabaseAdmin
-      .from("pedidos")
-      .update({
-        estado_pago: status === "APPROVED" ? "APROBADO" : status === "DECLINED" || status === "RECHAZADO" ? "RECHAZADO" : status === "ERROR" ? "ERROR" : "PENDIENTE",
-        wompi_transaction_id: transactionId || null,
-        wompi_status: status,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("numero_pedido", reference);
-  } catch {
-    // Si falla la actualización, Wompi reintentará el webhook (máximo 3 veces).
-    // Siempre respondemos 200 para evitar reintentos innecesarios por error de nuestro lado.
+  const result = await applyWompiTransactionToPedido(supabaseAdmin, {
+    id: transactionId,
+    status,
+    reference,
+  });
+
+  if (!result.ok && !result.notFound) {
+    // Error transitorio de DB: devolver 5xx para que Wompi reintente (idempotencia protege efectos).
+    console.error("[wompi/webhook] processing error", result.error, reference);
+    return NextResponse.json({ received: false, error: result.error }, { status: 500 });
   }
 
-  return NextResponse.json({ received: true }, { status: 200 });
+  if (result.notFound) {
+    console.warn("[wompi/webhook] pedido not found for reference", reference);
+  }
+
+  return NextResponse.json(
+    { received: true, estadoPago: result.estadoPago ?? null },
+    { status: 200 }
+  );
 }

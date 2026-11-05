@@ -2,76 +2,126 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { supabase } from "@/lib/supabase/client";
+import { useCart } from "@/context/CartContext";
+
+type TxState = {
+  estadoPago: string | null;
+  reference: string | null;
+  loading: boolean;
+  error: string | null;
+};
+
+const POLL_MS = 3000;
+const POLL_MAX = 8;
 
 function RespuestaContent() {
   const params = useSearchParams();
   const transactionId = params.get("id");
-  const [status, setStatus] = useState<string | null>(null);
-  const [reference, setReference] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { clear } = useCart();
+  const [state, setState] = useState<TxState>({
+    estadoPago: null,
+    reference: null,
+    loading: true,
+    error: null,
+  });
+  const [cleared, setCleared] = useState(false);
+
+  const fetchStatus = useCallback(async (id: string) => {
+    const res = await fetch(`/api/wompi/transaction?id=${encodeURIComponent(id)}`, {
+      cache: "no-store",
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      estadoPago?: string | null;
+      pedido?: { numero_pedido?: string | null } | null;
+      pending?: boolean;
+    };
+    return {
+      estadoPago: data.estadoPago ?? null,
+      reference: data.pedido?.numero_pedido ?? null,
+      pending: Boolean(data.pending),
+    };
+  }, []);
 
   useEffect(() => {
     if (!transactionId) {
-      setLoading(false);
+      setState((s) => ({ ...s, loading: false }));
       return;
     }
 
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("pedidos")
-          .select("numero_pedido, estado_pago, total_cop")
-          .or(
-            `wompi_transaction_id.eq.${transactionId},numero_pedido.eq.${transactionId}`
-          )
-          .single();
+    let cancelled = false;
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-        if (!error && data) {
-          setReference(data.numero_pedido);
-          setStatus(data.estado_pago);
+    const run = async () => {
+      try {
+        const r = await fetchStatus(transactionId);
+        if (cancelled) return;
+        setState({ estadoPago: r.estadoPago, reference: r.reference, loading: false, error: null });
+        const pending = !r.estadoPago || r.estadoPago === "PENDIENTE" || r.pending;
+        if (pending && attempts < POLL_MAX) {
+          attempts += 1;
+          timer = setTimeout(run, POLL_MS);
         }
-      } catch {
-        // Ignorar errores de consulta; se muestra mensaje informativo genérico.
-      } finally {
-        setLoading(false);
+      } catch (e) {
+        if (cancelled) return;
+        setState((s) => ({ ...s, loading: false, error: "No pudimos consultar el estado del pago." }));
       }
-    })();
-  }, [transactionId]);
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [transactionId, fetchStatus]);
+
+  useEffect(() => {
+    if (state.estadoPago === "APROBADO" && !cleared) {
+      clear();
+      setCleared(true);
+    }
+  }, [state.estadoPago, cleared, clear]);
+
+  const status = state.estadoPago;
 
   return (
     <>
-      {loading ? (
+      {state.loading ? (
         <p className="checkout-empty-text">Consultando el estado del pago…</p>
       ) : transactionId ? (
         <>
           <h1 className="checkout-title">
-            {status === "PENDIENTE"
+            {status === "PENDIENTE" || !status
               ? "Pago en proceso"
               : status === "APROBADO"
                 ? "¡Pago confirmado!"
                 : status === "DECLINED" || status === "RECHAZADO"
                   ? "Pago rechazado"
-                  : "Estado del pago"}
+                  : status === "ERROR"
+                    ? "Error en el pago"
+                    : "Estado del pago"}
           </h1>
-          {reference && (
+          {state.reference && (
             <p className="checkout-empty-text">
-              Referencia del pedido: <strong>{reference}</strong>
+              Referencia del pedido: <strong>{state.reference}</strong>
             </p>
           )}
           <p className="checkout-empty-text">
             {status === "APROBADO"
-              ? "Tu pago fue aprobado y tu pedido está siendo procesado. Te enviaremos un correo con los detalles."
-              : status === "PENDIENTE"
-                ? "Tu pago está siendo procesado. Te notificaremos una vez se confirme el estado."
+              ? "Tu pago fue aprobado y tu pedido está siendo procesado. Te contactaremos con los detalles."
+              : status === "PENDIENTE" || !status
+                ? "Tu pago está siendo procesado o confirmado. Esta página se actualiza automáticamente en unos segundos."
                 : status === "DECLINED" || status === "RECHAZADO"
                   ? "El pago no se pudo completar. Inténtalo nuevamente o elige otro método de pago."
-                  : "Transacción " + transactionId}
+                  : status === "ERROR"
+                    ? "Ocurrió un error procesando el pago. Inténtalo nuevamente."
+                    : `Transacción ${transactionId}`}
           </p>
+          {state.error && <p className="checkout-empty-text">{state.error}</p>}
           <Link href="/coleccion/soberbia" className="cta-btn">
             Seguir explorando
           </Link>

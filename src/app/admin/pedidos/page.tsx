@@ -13,6 +13,8 @@ type Pedido = {
   items?: unknown[];
   total_cop?: number;
   estado_pago?: string;
+  wompi_status?: string;
+  wompi_transaction_id?: string;
   estado_envio?: string;
   guia_rastreo?: string;
   transportadora?: string;
@@ -35,13 +37,13 @@ export default function AdminPedidos() {
   useEffect(() => { load(); }, []);
 
   const actualizarEstado = async (id: string, estado_envio: string) => {
-    await supabase.from("pedidos").update({ estado_envio }).eq("id", id);
+    await supabase.from("pedidos").update({ estado_envio, updated_at: new Date().toISOString() }).eq("id", id);
     load();
   };
 
   const guardarDespacho = async () => {
     if (!selected) return;
-    await supabase.from("pedidos").update({ transportadora, guia_rastreo: guia }).eq("id", selected.id);
+    await supabase.from("pedidos").update({ transportadora, guia_rastreo: guia, updated_at: new Date().toISOString() }).eq("id", selected.id);
     setSelected(null);
     load();
     alert("Despacho guardado");
@@ -73,7 +75,7 @@ export default function AdminPedidos() {
                   <th># Pedido</th>
                   <th>Cliente</th>
                   <th>Pago</th>
-                  <th>Tejido</th>
+                  <th>Wompi</th>
                   <th>Envío</th>
                   <th>Total</th>
                   <th>Acciones</th>
@@ -89,14 +91,14 @@ export default function AdminPedidos() {
                     <td>{p.numero_pedido || p.id.slice(0, 8)}</td>
                     <td>{p.cliente_nombre}</td>
                     <td>{p.estado_pago || "PENDIENTE"}</td>
+                    <td title={p.wompi_transaction_id || ""} style={{ fontSize: "0.85em" }}>{p.wompi_status || p.wompi_transaction_id?.slice(0, 10) || "—"}</td>
                     <td>
-                      <select value={p.estado_envio || "Por Tejer"} onChange={(e) => actualizarEstado(p.id, e.target.value)} className="form-input">
-                        <option>Por Tejer</option>
-                        <option>En Proceso</option>
-                        <option>Listo para Despacho</option>
+                      <select value={p.estado_envio || "EN_PREPARACION"} onChange={(e) => actualizarEstado(p.id, e.target.value)} className="form-input">
+                        <option value="EN_PREPARACION">En preparación</option>
+                        <option value="ENVIADO">Enviado</option>
+                        <option value="ENTREGADO">Entregado</option>
                       </select>
                     </td>
-                    <td>{p.estado_envio || "Pendiente"}</td>
                     <td style={{ textAlign: "right" }}>${(p.total_cop || 0).toLocaleString("es-CO")}</td>
                     <td style={{ textAlign: "right" }}>
                       <button onClick={() => { setSelected(p); setTransportadora(p.transportadora || ""); setGuia(p.guia_rastreo || ""); }} style={{ color: "var(--color-accent)" }}>Ver</button>

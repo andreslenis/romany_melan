@@ -35,7 +35,7 @@ create table if not exists productos (
 );
 
 do $$ begin
-  create type estado_pago_enum as enum ('PENDIENTE','APROBADO','RECHAZADO');
+  create type estado_pago_enum as enum ('PENDIENTE','APROBADO','RECHAZADO','ERROR');
 exception when duplicate_object then null;
 end $$;
 
@@ -54,10 +54,16 @@ create table if not exists pedidos (
   items jsonb,
   total_cop numeric,
   wompi_transaction_id text,
+  wompi_status text,
+  metodo_pago text,
+  ambiente text,
   estado_pago estado_pago_enum default 'PENDIENTE',
   estado_envio estado_envio_enum default 'EN_PREPARACION',
   guia_rastreo text,
-  created_at timestamptz default now()
+  transportadora text,
+  post_pago_procesado_at timestamptz,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 create table if not exists perfiles (

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { supabase } from "@/lib/supabase/client";
 import {
   WOMPI_CHECKOUT_URL,
   WOMPI_ENVIRONMENT,
@@ -77,23 +76,30 @@ export default function WebCheckoutForm({ total, referencia, items, datos }: Pro
       if (!signature) return;
 
       const amountInCents = Math.round(total * 100);
+      setLoading(true);
+      setError(false);
 
       try {
-        await supabase.from("pedidos").insert({
-          numero_pedido: referencia,
-          cliente_nombre: datos.nombre,
-          cliente_email: datos.email,
-          cliente_telefono: datos.telefono,
-          direccion_envio: datos,
-          items: items,
-          total_cop: total,
-          wompi_transaction_id: null,
-          estado_pago: "PENDIENTE",
-          metodo_pago: "web_checkout",
-          ambiente: WOMPI_ENVIRONMENT,
+        const res = await fetch("/api/checkout/pedido", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            numero_pedido: referencia,
+            items,
+            datos,
+            total_cop: total,
+            ambiente: WOMPI_ENVIRONMENT,
+          }),
         });
-      } catch {
-        // Si falla la creación local, el webhook aún puede registrar la transacción.
+        if (!res.ok) {
+          const errData = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(errData.error || "pedido_create_failed");
+        }
+      } catch (err) {
+        console.error("[checkout] no se pudo registrar el pedido", err);
+        setError(true);
+        setLoading(false);
+        return;
       }
 
       const params = new URLSearchParams();
@@ -118,8 +124,8 @@ export default function WebCheckoutForm({ total, referencia, items, datos }: Pro
       <div className="payment-fallback">
         <h3 className="checkout-block-title">Pagar con Wompi</h3>
         <p className="payment-status">
-          No se pudo configurar el pago con Wompi. Verifica la configuración de
-          Wompi.
+          No se pudo preparar el pago. Inténtalo de nuevo o verifica la
+          configuración.
         </p>
       </div>
     );
