@@ -106,7 +106,9 @@ export default function WebCheckoutForm({ total, referencia, items, datos }: Pro
         params.set("redirect-url", WOMPI_REDIRECT_URL);
       }
 
-      window.location.href = `${WOMPI_CHECKOUT_URL}?${params.toString()}`;
+      const checkoutUrl = `${WOMPI_CHECKOUT_URL}?${params.toString()}`;
+      console.log("[wompi/checkout] redirectUrl:", checkoutUrl);
+      window.location.href = checkoutUrl;
     },
     [referencia, total, signature, items, datos]
   );
