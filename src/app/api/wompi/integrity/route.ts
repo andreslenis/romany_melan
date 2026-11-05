@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
   if (missing.length) {
     return NextResponse.json({ error: "Missing params", missing }, { status: 400 });
   }
+
+  // Diagnóstico: loguear (sin exponer el secreto) qué se está firmando
+  console.log("[wompi/integrity] reference:", reference, "amountInCents:", amountInCents, "currency:", currency, "secretConfigured:", !!secret);
+
   const cadena = `${reference}${amountInCents}${currency}${secret}`;
   const hash = crypto.createHash("sha256").update(cadena).digest("hex");
   return NextResponse.json({ signature: hash });
