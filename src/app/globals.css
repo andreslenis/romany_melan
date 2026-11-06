@@ -1012,6 +1012,13 @@ button {
   font-size: clamp(2rem, 6vw, 3.25rem);
 }
 
+.pdp-description {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(17, 17, 17, 0.72);
+  margin: 0;
+}
+
 .pdp-price {
   font-size: clamp(1.25rem, 3vw, 1.5rem);
 }

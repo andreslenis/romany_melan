@@ -20,31 +20,52 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   const { perfil, solicitarEspera } = usePerfil();
 
   type DBProd = {
-    id: string; slug: string; nombre: string; linea: string; precio: number; precio_cop?: number; precioFormato?: string;
-    material?: string; categoria?: string; badge?: string; narrativa?: string;     especificaciones?: { material?: string; componentes?: string; piedra?: string };
+    id: string; slug: string; nombre: string; linea: string; precio?: number; precio_cop?: number; precioFormato?: string;
+    material?: string; categoria?: string; badge?: string; narrativa?: string; descripcion_corta?: string; historia_narrativa?: string;
+    especificaciones?: { material?: string; componentes?: string; piedra?: string };
     tallas?: (string | number)[];
     imagen?: string; imagenes?: string[]; colorHilo?: string; colores_hilo?: string[]; modoAcceso?: string; insignia?: string;
-    grupo?: string; coleccion_id?: string; imagenes_por_color?: Record<string, string>;
+    grupo?: string; coleccion_id?: string; imagenes_por_color?: Record<string, string>; imagenesPorColor?: Record<string, string>;
   };
 
   const [productoBase, setProductoBase] = useState<DBProd | null>(null);
   const [variantes, setVariantes] = useState<DBProd[]>([]);
   const [lineaActiva, setLineaActiva] = useState<Linea>("origen");
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
-  const [colorHilo, setColorHilo] = useState<string>("soberbia");
+  const [colorHilo, setColorHilo] = useState<string | null>(null);
   const [observaciones, setObservaciones] = useState("");
   const [emailEspera, setEmailEspera] = useState("");
   const [esperaRegistrada, setEsperaRegistrada] = useState(false);
 
+  const getImgsPorColor = (p: DBProd | null): Record<string, string> => {
+    if (!p) return {};
+    const a = p.imagenesPorColor;
+    const b = p.imagenes_por_color;
+    if (a && typeof a === "object") return a;
+    if (b && typeof b === "object") return b;
+    return {};
+  };
+
+  const coloresConFoto = (p: DBProd | null): string[] => {
+    if (!p) return [];
+    const seleccionados = Array.isArray(p.colores_hilo) ? p.colores_hilo.filter((c): c is string => typeof c === "string" && c.length > 0) : [];
+    if (seleccionados.length === 0) return [];
+    const imgs = getImgsPorColor(p);
+    return seleccionados.filter((id) => typeof imgs[id] === "string" && imgs[id].length > 0);
+  };
+
   useEffect(() => {
     const load = async () => {
       const { data: p } = await supabase.from("productos").select("*").eq("slug", slug).maybeSingle();
-      if (!p) { setProductoBase(null); return; }
+      if (!p) { setProductoBase(null); setVariantes([]); setColorHilo(null); return; }
       const prod = p as DBProd;
       setProductoBase(prod);
       const prodLinea = String(prod.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
       setLineaActiva(prodLinea);
-      setColorHilo(Array.isArray(prod.colores_hilo) && prod.colores_hilo.length ? prod.colores_hilo[0] : "soberbia");
+      const imgs = (prod.imagenesPorColor && typeof prod.imagenesPorColor === "object" ? prod.imagenesPorColor : prod.imagenes_por_color && typeof prod.imagenes_por_color === "object" ? prod.imagenes_por_color : {}) as Record<string, string>;
+      const seleccionados = Array.isArray(prod.colores_hilo) ? prod.colores_hilo.filter((c): c is string => typeof c === "string" && c.length > 0) : [];
+      const disponibles = seleccionados.filter((id) => typeof imgs[id] === "string" && imgs[id].length > 0);
+      setColorHilo(disponibles.length > 0 ? disponibles[0] : null);
       setSelectedSize(Array.isArray(prod.tallas) && prod.tallas.length ? String(prod.tallas[0]) : null);
       if (prod.grupo) {
         const { data: vs } = await supabase.from("productos").select("*").eq("grupo", prod.grupo);
@@ -57,6 +78,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   }, [slug]);
 
   const varianteActual = (() => {
+    if (!colorHilo) return productoBase;
     const lineaActivaNorm = lineaActiva;
     const byColorInLinea = variantes.find((v) => {
       const vLinea = String(v.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
@@ -122,9 +144,15 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     );
   }
 
-  const color = colorPorId(colorHilo);
+  const color = colorHilo ? colorPorId(colorHilo) : undefined;
   const lineaNormProducto = String(producto.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
   const esSingular = lineaNormProducto === "singular";
+  const descripcionCorta = String((producto as unknown as Record<string, unknown>).descripcion_corta || "").trim();
+  const historia = String(
+    (producto as unknown as Record<string, unknown>).historia_narrativa ||
+      (producto as unknown as Record<string, unknown>).narrativa ||
+      ""
+  ).trim();
 
   if (esSingular && !perfil) {
     return (
@@ -143,23 +171,41 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     );
   }
 
-  const imagenPrincipalVar = (Array.isArray(producto.imagenes) && producto.imagenes.length ? producto.imagenes[0] : producto.imagen) as string;
+  const imagenPrincipalVar = (Array.isArray(producto.imagenes) && producto.imagenes.length ? producto.imagenes[0] : producto.imagen) as string | undefined;
+
+  const imgsPorColor = getImgsPorColor(producto);
+  const colorActivoValido = !esSingular && colorHilo && typeof imgsPorColor[colorHilo] === "string" && imgsPorColor[colorHilo].length > 0 ? colorHilo : null;
 
   const allImages = (() => {
-    const imgsPorColor = (producto as unknown as Record<string, unknown>)?.imagenesPorColor as Record<string, string> | undefined ||
-      (producto as unknown as Record<string, unknown>)?.imagenes_por_color as Record<string, string> | undefined;
-    if (imgsPorColor && colorHilo && imgsPorColor[colorHilo]) {
-      const colorImg = imgsPorColor[colorHilo];
+    if (colorActivoValido) {
+      const colorImg = imgsPorColor[colorActivoValido];
       const base = Array.isArray(producto.imagenes) && producto.imagenes.length > 0
         ? [colorImg, ...producto.imagenes.filter((img: string) => img !== colorImg)]
         : [colorImg];
-      return base;
+      return base.filter(Boolean);
     }
     if (Array.isArray(producto.imagenes) && producto.imagenes.length > 0) {
-      return [imagenPrincipalVar, ...producto.imagenes.filter((img: string) => img !== imagenPrincipalVar)];
+      return imagenPrincipalVar
+        ? [imagenPrincipalVar, ...producto.imagenes.filter((img: string) => img !== imagenPrincipalVar)]
+        : [...producto.imagenes];
     }
-    return [imagenPrincipalVar];
+    return imagenPrincipalVar ? [imagenPrincipalVar] : [];
   })();
+
+  const coloresDisponibles = (() => {
+    if (esSingular) return [];
+    const ids = new Set<string>();
+    [producto, ...variantes].forEach((v) => {
+      if (!v) return;
+      const vLinea = String(v.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
+      if (vLinea !== lineaNormProducto) return;
+      coloresConFoto(v).forEach((id) => ids.add(id));
+    });
+    return COLORES_HILO.filter((c) => ids.has(c.id));
+  })();
+
+  const imagenParaCarrito = (colorActivoValido && imgsPorColor[colorActivoValido]) || imagenPrincipalVar || allImages[0] || "";
+  const precioFormato = producto.precioFormato || (producto.precio_cop ? `$${Number(producto.precio_cop).toLocaleString("es-CO")} COP` : "");
 
   const handleAddToCart = () => {
     const prodAny = producto as unknown as Record<string, unknown>;
@@ -175,10 +221,10 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
       linea: LINEAS_CORTAS[lineaNormProducto as Linea],
       lineaId: lineaNormProducto as Linea,
       precio: isNaN(precio) ? 0 : precio,
-      imagen: imagenPrincipalVar,
+      imagen: imagenParaCarrito,
       talla: selectedSize,
-      colorHilo: esSingular ? null : colorHilo,
-      colorHiloHex: esSingular ? null : color?.hex ?? null,
+      colorHilo: esSingular ? null : colorActivoValido,
+      colorHiloHex: esSingular ? null : (colorActivoValido ? colorPorId(colorActivoValido)?.hex ?? null : null),
       observaciones,
     });
   };
@@ -224,8 +270,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                   aria-label="Ampliar imagen"
                 >
                   <Image
-                    src={allImages[currentImageIndex] || imagenPrincipalVar}
-                    alt={`${producto.nombre} · Hilo ${color?.nombre ?? ""}`}
+                    src={allImages[currentImageIndex] || imagenParaCarrito}
+                    alt={color ? `${producto.nombre} · Hilo ${color.nombre}` : producto.nombre}
                     unoptimized
                     fill
                     priority
@@ -323,8 +369,9 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
             <div className="pdp-info">
               <div className="pdp-header">
                 <h1 className="pdp-title">{producto.nombre}</h1>
+                {descripcionCorta && <p className="pdp-description">{descripcionCorta}</p>}
                 <p className="pdp-line">{producto.material}</p>
-                <p className="pdp-price">{producto.precioFormato}</p>
+                <p className="pdp-price">{precioFormato}</p>
               </div>
 
                {variantes.length > 1 && false && (
@@ -354,22 +401,21 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
               </div>
 
               {esSingular ? (
-                <div className="pdp-color-fijo">
-                  <h3 className="pdp-block-title">Color del hilo</h3>
-                  <p className="pdp-color-fijo-text">
-                    <span className="color-swatch color-swatch--static" style={{ backgroundColor: color?.hex }} aria-hidden="true" />
-                    {color?.nombre} · Fijo según el diseño de la autora
-                  </p>
-                </div>
-              ) : (
+                color ? (
+                  <div className="pdp-color-fijo">
+                    <h3 className="pdp-block-title">Color del hilo</h3>
+                    <p className="pdp-color-fijo-text">
+                      <span className="color-swatch color-swatch--static" style={{ backgroundColor: color.hex }} aria-hidden="true" />
+                      {color.nombre} · Fijo según el diseño de la autora
+                    </p>
+                  </div>
+                ) : null
+              ) : coloresDisponibles.length > 0 ? (
                 <div className="pdp-color-block">
                   <h3 className="pdp-block-title">Color del hilo</h3>
                   <p className="pdp-color-intro">Cada hilo toma el color de un pecado, o los tonos neutros Oscuridad y Luz. Elige el que te acompaña.</p>
                   <div className="color-swatches">
-                    {(COLORES_HILO.filter((c) => variantes.some((v) => Array.isArray(v.colores_hilo) && v.colores_hilo.includes(c.id))).length > 0
-                      ? COLORES_HILO.filter((c) => variantes.some((v) => Array.isArray(v.colores_hilo) && v.colores_hilo.includes(c.id)))
-                      : COLORES_HILO
-                    ).map((opcion) => (
+                    {coloresDisponibles.map((opcion) => (
                       <button
                         key={opcion.id}
                         type="button"
@@ -382,9 +428,9 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                       />
                     ))}
                   </div>
-                  <p className="color-selected">Hilo {color?.nombre} · {color?.pecado}</p>
+                  {color && <p className="color-selected">Hilo {color.nombre} · {color.pecado}</p>}
                 </div>
-              )}
+              ) : null}
 
                {Array.isArray(producto.tallas) && producto.tallas.length > 0 && (
                 <div className="pdp-size-block">
@@ -497,11 +543,16 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                     </div>
                   </details>
                 </div>
-              </div>
-
-              <div className="pdp-narrative">
-                <h3 className="pdp-block-title">La Historia detrás de esta pieza</h3>
-                <p>{producto.narrativa}</p>
+                {historia && (
+                  <div className="pdp-accordion-item">
+                    <details>
+                      <summary>NARRATIVA / HISTORIA</summary>
+                      <div className="pdp-accordion-content">
+                        <p>{historia}</p>
+                      </div>
+                    </details>
+                  </div>
+                )}
               </div>
 
               {null}
@@ -539,8 +590,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
             >
               <div className="zoom-img" style={{ transform: `scale(${zoomScale})` }}>
                 <Image
-                  src={allImages[currentImageIndex] || imagenPrincipalVar}
-                  alt={`${producto.nombre} · Hilo ${color?.nombre ?? ""}`}
+                  src={allImages[currentImageIndex] || imagenParaCarrito}
+                  alt={color ? `${producto.nombre} · Hilo ${color.nombre}` : producto.nombre}
                   width={800}
                   height={1000}
 
