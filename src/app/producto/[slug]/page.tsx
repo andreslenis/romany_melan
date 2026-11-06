@@ -24,7 +24,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     material?: string; categoria?: string; badge?: string; narrativa?: string; descripcion_corta?: string; historia_narrativa?: string;
     especificaciones?: { material?: string; componentes?: string; piedra?: string };
     tallas?: (string | number)[];
-    imagen?: string; imagenes?: string[]; colorHilo?: string; colores_hilo?: string[]; modoAcceso?: string; insignia?: string;
+    imagen?: string; imagenes?: string[]; colorHilo?: string; colores_hilo?: string[] | string; modoAcceso?: string; insignia?: string;
     grupo?: string; coleccion_id?: string; imagenes_por_color?: Record<string, string>; imagenesPorColor?: Record<string, string>;
   };
 
@@ -39,16 +39,41 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
 
   const getImgsPorColor = (p: DBProd | null): Record<string, string> => {
     if (!p) return {};
-    const a = p.imagenesPorColor;
-    const b = p.imagenes_por_color;
-    if (a && typeof a === "object") return a;
-    if (b && typeof b === "object") return b;
-    return {};
+    const source = p.imagenesPorColor && typeof p.imagenesPorColor === "object" ? p.imagenesPorColor : p.imagenes_por_color;
+    if (!source || typeof source !== "object" || Array.isArray(source)) return {};
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(source as Record<string, unknown>)) {
+      if (typeof key === "string" && typeof value === "string" && value.trim().length > 0) {
+        out[key.trim()] = value;
+      }
+    }
+    return out;
   };
+
+  const parseColoresHilo = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+      return value.filter((c): c is string => typeof c === "string" && c.trim().length > 0).map((c) => c.trim());
+    }
+    if (typeof value === "string" && value.trim().length > 0) {
+      const raw = value.trim();
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((c): c is string => typeof c === "string" && c.trim().length > 0).map((c) => c.trim());
+        }
+      } catch {
+        // not JSON
+      }
+      return raw.split(",").map((c) => c.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
+  const colorIdsValidos = new Set(COLORES_HILO.map((c) => c.id));
 
   const coloresConFoto = (p: DBProd | null): string[] => {
     if (!p) return [];
-    const seleccionados = Array.isArray(p.colores_hilo) ? p.colores_hilo.filter((c): c is string => typeof c === "string" && c.length > 0) : [];
+    const seleccionados = parseColoresHilo(p.colores_hilo).filter((id) => colorIdsValidos.has(id));
     if (seleccionados.length === 0) return [];
     const imgs = getImgsPorColor(p);
     return seleccionados.filter((id) => typeof imgs[id] === "string" && imgs[id].length > 0);
@@ -62,10 +87,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
       setProductoBase(prod);
       const prodLinea = String(prod.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
       setLineaActiva(prodLinea);
-      const imgs = (prod.imagenesPorColor && typeof prod.imagenesPorColor === "object" ? prod.imagenesPorColor : prod.imagenes_por_color && typeof prod.imagenes_por_color === "object" ? prod.imagenes_por_color : {}) as Record<string, string>;
-      const seleccionados = Array.isArray(prod.colores_hilo) ? prod.colores_hilo.filter((c): c is string => typeof c === "string" && c.length > 0) : [];
-      const disponibles = seleccionados.filter((id) => typeof imgs[id] === "string" && imgs[id].length > 0);
-      setColorHilo(disponibles.length > 0 ? disponibles[0] : null);
       setSelectedSize(Array.isArray(prod.tallas) && prod.tallas.length ? String(prod.tallas[0]) : null);
       if (prod.grupo) {
         const { data: vs } = await supabase.from("productos").select("*").eq("grupo", prod.grupo);
@@ -82,12 +103,12 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     const lineaActivaNorm = lineaActiva;
     const byColorInLinea = variantes.find((v) => {
       const vLinea = String(v.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
-      const cs = Array.isArray(v.colores_hilo) ? v.colores_hilo : [];
+      const cs = parseColoresHilo(v.colores_hilo);
       return vLinea === lineaActivaNorm && cs.includes(colorHilo);
     });
     if (byColorInLinea) return byColorInLinea;
     const byColorAny = variantes.find((v) => {
-      const cs = Array.isArray(v.colores_hilo) ? v.colores_hilo : [];
+      const cs = parseColoresHilo(v.colores_hilo);
       return cs.includes(colorHilo);
     });
     if (byColorAny) return byColorAny;
@@ -95,6 +116,21 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   })();
   const producto = varianteActual || productoBase;
   const slugActivo = producto?.slug;
+  const lineaNormProducto = String(producto?.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
+  const esSingular = lineaNormProducto === "singular";
+
+  const coloresDisponibles = (() => {
+    if (!producto || esSingular) return [];
+    const ids = new Set<string>();
+    [producto, ...variantes].forEach((v) => {
+      if (!v) return;
+      const vLinea = String(v.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
+      if (vLinea !== lineaNormProducto) return;
+      coloresConFoto(v).forEach((id) => ids.add(id));
+    });
+    return COLORES_HILO.filter((c) => ids.has(c.id));
+  })();
+  const coloresDisponiblesKey = coloresDisponibles.map((c) => c.id).join("|");
 
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
@@ -105,7 +141,18 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
     setCurrentImageIndex(0);
   }, [slugActivo, colorHilo]);
 
-
+  useEffect(() => {
+    if (!productoBase) return;
+    if (esSingular) {
+      setColorHilo(null);
+      return;
+    }
+    if (coloresDisponibles.length === 0) {
+      setColorHilo(null);
+      return;
+    }
+    setColorHilo((prev) => (prev && coloresDisponibles.some((c) => c.id === prev) ? prev : coloresDisponibles[0].id));
+  }, [productoBase, esSingular, coloresDisponiblesKey]);
 
   useEffect(() => {
     if (!perfil) return;
@@ -145,8 +192,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   }
 
   const color = colorHilo ? colorPorId(colorHilo) : undefined;
-  const lineaNormProducto = String(producto.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
-  const esSingular = lineaNormProducto === "singular";
   const descripcionCorta = String((producto as unknown as Record<string, unknown>).descripcion_corta || "").trim();
   const historia = String(
     (producto as unknown as Record<string, unknown>).historia_narrativa ||
@@ -190,18 +235,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
         : [...producto.imagenes];
     }
     return imagenPrincipalVar ? [imagenPrincipalVar] : [];
-  })();
-
-  const coloresDisponibles = (() => {
-    if (esSingular) return [];
-    const ids = new Set<string>();
-    [producto, ...variantes].forEach((v) => {
-      if (!v) return;
-      const vLinea = String(v.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
-      if (vLinea !== lineaNormProducto) return;
-      coloresConFoto(v).forEach((id) => ids.add(id));
-    });
-    return COLORES_HILO.filter((c) => ids.has(c.id));
   })();
 
   const imagenParaCarrito = (colorActivoValido && imgsPorColor[colorActivoValido]) || imagenPrincipalVar || allImages[0] || "";
@@ -370,6 +403,18 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
               <div className="pdp-header">
                 <h1 className="pdp-title">{producto.nombre}</h1>
                 {descripcionCorta && <p className="pdp-description">{descripcionCorta}</p>}
+                {historia && (
+                  <div className="pdp-accordion pdp-accordion--header">
+                    <div className="pdp-accordion-item">
+                      <details>
+                        <summary>NARRATIVA / HISTORIA</summary>
+                        <div className="pdp-accordion-content">
+                          <p>{historia}</p>
+                        </div>
+                      </details>
+                    </div>
+                  </div>
+                )}
                 <p className="pdp-line">{producto.material}</p>
                 <p className="pdp-price">{precioFormato}</p>
               </div>
@@ -524,7 +569,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                   <details>
                     <summary>CUIDA DE TUS JOYAS</summary>
                     <div className="pdp-accordion-content">
-                      <p>Desde makrama te aconsejamos que hagas un uso adecuado de tus joyas. Son productos que aunque sean duraderos han de ser almacenados de forma independiente evitando el roce y a ser posible en bolsitas. No uses productos abrasivos para su limpieza. Recuerda tratarlas con cariño y mimo. Mas info en Jewellery Care</p>
+                      <p>Desde Romany Melan te aconsejamos que hagas un uso adecuado de tus joyas. Son productos que aunque sean duraderos han de ser almacenados de forma independiente evitando el roce y a ser posible en bolsas individuales. No uses productos abrasivos para su limpieza. Recuerda tratarlas con cariño y mimo.</p>
                     </div>
                   </details>
                 </div>
@@ -536,23 +581,58 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                       <p>Paso 2- Coloca la cinta sobre la mesa y mídela con una regla.</p>
                       <p>Paso 3- Una véz sepas que medida tienes ya puedes escoger la medida que más te convenga de las medidas que te proponemos, siempre aproximándote al máximo a tu medida. Ten en cuenta si te gustan más bien ajustadas, un poco sueltas, o muy sueltas. Depende del modelo de pulsera es más conveniente escoger una opción u otra.</p>
                       <div className="pdp-accordion-images">
-                        <Image src="/resources/como_medir/paso1.jpg" alt="Paso 1 para medir muñeca" width={400} height={400} />
-                        <Image src="/resources/como_medir/paso2.jpg" alt="Paso 2 para medir muñeca" width={400} height={400} />
-                        <Image src="/resources/como_medir/paso3.jpg" alt="Paso 3 para medir muñeca" width={400} height={400} />
+                        <Image src="/resources/como_medir/paso_1_mano.jpg" alt="Paso 1 para medir muñeca" width={400} height={400} />
+                        <Image src="/resources/como_medir/paso_2_mano.jpg" alt="Paso 2 para medir muñeca" width={400} height={400} />
+                        <Image src="/resources/como_medir/paso_3_mano.jpg" alt="Paso 3 para medir muñeca" width={400} height={400} />
                       </div>
                     </div>
                   </details>
                 </div>
-                {historia && (
-                  <div className="pdp-accordion-item">
-                    <details>
-                      <summary>NARRATIVA / HISTORIA</summary>
-                      <div className="pdp-accordion-content">
-                        <p>{historia}</p>
+                <div className="pdp-accordion-item">
+                  <details>
+                    <summary>COMO SABER TU TALLA DE ANILLO</summary>
+                    <div className="pdp-accordion-content">
+                      <p>Paso 1: Recortamos una tira de papel o un trozo de cordel.</p>
+                      <p>Paso 2: Lo colocamos alrededor de nuestro dedo como si fuera un anillo.</p>
+                      <p>Paso 3: Realizamos una marca en los extremos del circulo de papel</p>
+                      <p>Paso 4: Medimos la distancia en milímetros y buscamos nuestra talla de anillo en la tabla</p>
+                      <table className="pdp-size-table">
+                        <thead>
+                          <tr>
+                            <th>MEDIDA</th>
+                            <th>TALLA</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr><td>46.8 mm</td><td>4</td></tr>
+                          <tr><td>46.8 mm</td><td>4’5</td></tr>
+                          <tr><td>49.3 mm</td><td>5</td></tr>
+                          <tr><td>50.6 mm</td><td>5’5</td></tr>
+                          <tr><td>51.8 mm</td><td>6</td></tr>
+                          <tr><td>51.8 mm</td><td>6’5</td></tr>
+                          <tr><td>54.3 mm</td><td>7</td></tr>
+                          <tr><td>55.6 mm</td><td>7’5</td></tr>
+                          <tr><td>56.9 mm</td><td>8</td></tr>
+                          <tr><td>56.9 mm</td><td>8’5</td></tr>
+                          <tr><td>59.4 mm</td><td>9</td></tr>
+                          <tr><td>60.9 mm</td><td>9’5</td></tr>
+                          <tr><td>62.2 mm</td><td>10</td></tr>
+                          <tr><td>63.5 mm</td><td>10’5</td></tr>
+                          <tr><td>64.7 mm</td><td>11</td></tr>
+                          <tr><td>66.0 mm</td><td>11’5</td></tr>
+                          <tr><td>67.2 mm</td><td>12</td></tr>
+                          <tr><td>67.2 mm</td><td>12’5</td></tr>
+                          <tr><td>69.7 mm</td><td>13</td></tr>
+                          <tr><td>71.0 mm</td><td>13’5</td></tr>
+                          <tr><td>72.3 mm</td><td>14</td></tr>
+                        </tbody>
+                      </table>
+                      <div className="pdp-accordion-images">
+                        <Image src="/resources/como_medir/paso_anillos.jpg" alt="Cómo medir tu talla de anillo" width={400} height={400} />
                       </div>
-                    </details>
-                  </div>
-                )}
+                    </div>
+                  </details>
+                </div>
               </div>
 
               {null}

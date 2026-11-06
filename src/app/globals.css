@@ -1151,6 +1151,41 @@ button {
   border: 1px solid rgba(17, 17, 17, 0.08);
 }
 
+.pdp-size-table {
+  width: 100%;
+  max-width: 22rem;
+  border-collapse: collapse;
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.pdp-size-table th,
+.pdp-size-table td {
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  padding: 0.4rem 0.65rem;
+  text-align: left;
+}
+
+.pdp-size-table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.78rem;
+  background: rgba(17, 17, 17, 0.03);
+}
+
+.pdp-accordion--header {
+  margin: 0.75rem 0 0;
+}
+
+.pdp-accordion--header summary {
+  padding: 0.75rem 0;
+}
+
+.pdp-accordion--header .pdp-accordion-content {
+  padding-bottom: 0.75rem;
+}
+
 .pdp-narrative {
   display: flex;
   flex-direction: column;
