@@ -440,12 +440,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 </div>
               )}
 
-              <div className="pdp-badge-block">
-                <span className="pdp-badge">{producto.badge}</span>
-                {producto.insignia && <span className="pdp-badge pdp-badge--exclusiva">{producto.insignia}</span>}
-              </div>
-
-              {esSingular ? (
+               {esSingular ? (
                 color ? (
                   <div className="pdp-color-fijo">
                     <h3 className="pdp-block-title">Color del hilo</h3>

@@ -154,11 +154,51 @@ export default function AdminProductos() {
     }
   };
 
+  const parseColoresHilo = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+      return value.filter((c): c is string => typeof c === "string" && c.trim().length > 0).map((c) => c.trim());
+    }
+    if (typeof value === "string" && value.trim().length > 0) {
+      const raw = value.trim();
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((c): c is string => typeof c === "string" && c.trim().length > 0).map((c) => c.trim());
+        }
+      } catch {
+        // not JSON
+      }
+      return raw.split(",").map((c) => c.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
+  const parseImgsPorColor = (value: unknown): Record<string, string> => {
+    let source = value;
+    if (typeof source === "string" && source.trim().length > 0) {
+      try {
+        source = JSON.parse(source);
+      } catch {
+        return {};
+      }
+    }
+    if (!source || typeof source !== "object" || Array.isArray(source)) return {};
+    const out: Record<string, string> = {};
+    for (const [key, val] of Object.entries(source as Record<string, unknown>)) {
+      if (typeof key === "string" && typeof val === "string" && val.trim().length > 0) {
+        out[key.trim()] = val;
+      }
+    }
+    return out;
+  };
+
   const editar = (p: Producto) => {
     if (p.coleccion_id) setColeccionId(p.coleccion_id);
     setEditingId(p.id);
     const imgs = Array.isArray(p.imagenes) ? (p.imagenes as string[]) : [];
-    const imgsPorColor = (p.imagenesPorColor && typeof p.imagenesPorColor === 'object' ? (p.imagenesPorColor as Record<string, string>) : (p.imagenes_por_color && typeof p.imagenes_por_color === 'object' ? (p.imagenes_por_color as Record<string, string>) : {}));
+    const imgsPorColor = { ...parseImgsPorColor(p.imagenes_por_color), ...parseImgsPorColor(p.imagenesPorColor) };
+    const coloresHilo = parseColoresHilo(p.colores_hilo);
+    const coloresHiloConFoto = Array.from(new Set([...coloresHilo, ...Object.keys(imgsPorColor)]));
     setForm({
       nombre: p.nombre,
        slug: p.slug || "",
@@ -175,7 +215,7 @@ export default function AdminProductos() {
       tamanoGema: String((p.especificaciones && p.especificaciones.piedra) || ""),
       requiereTalla: Array.isArray(p.tallas) && (p.tallas as unknown[]).length > 0,
       tallas: Array.isArray(p.tallas) ? (p.tallas as string[]).join(", ") : "",
-      coloresHilo: Array.isArray(p.colores_hilo) ? (p.colores_hilo as string[]) : [],
+      coloresHilo: coloresHiloConFoto,
       imagenesPorColor: imgsPorColor
     });
     setSelectedFiles([]);
