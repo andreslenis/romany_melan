@@ -34,7 +34,6 @@ export default function AdminProductos() {
     nombre: "",
     slug: "",
     coleccion: "Soberbia",
-    grupo: "",
     linea: "origen",
     precio: 0,
     stock: 0,
@@ -107,19 +106,20 @@ export default function AdminProductos() {
         uploadedUrls.push(pub.publicUrl);
       }
       const imagenesPorColorFinal: Record<string, string> = { ...(form.imagenesPorColor || {}) };
+      const imagenesPorColorValue = Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null;
       const payload = {
          coleccion_id: coleccionId || null,
          nombre: form.nombre,
           slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
          linea: form.linea === "singular" ? "SINGULAR" : "ORIGEN",
-          grupo: form.grupo || null,
         precio_cop: Number(form.precio) || 0,
         stock_disponible: Number(form.stock) || 0,
         historia_narrativa: form.historia,
         descripcion_corta: form.descripcion_corta,
         activo: form.activo,
          imagenes: [...(form.imagenes || []), ...uploadedUrls].slice(0, 3),
-         imagenesPorColor: Object.keys(imagenesPorColorFinal).length > 0 ? imagenesPorColorFinal : null,
+         imagenesPorColor: imagenesPorColorValue,
+         imagenes_por_color: imagenesPorColorValue,
         especificaciones: {
           material: form.tipoHilo,
           componentes: form.componentes,
@@ -144,7 +144,7 @@ export default function AdminProductos() {
         }
         if (data && data[0]) setProductos((prev) => [data[0] as Producto, ...prev]);
       }
-      setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
+      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
       setSelectedFiles([]);
       setEditingId(null);
       load();
@@ -154,15 +154,54 @@ export default function AdminProductos() {
     }
   };
 
+  const parseColoresHilo = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+      return value.filter((c): c is string => typeof c === "string" && c.trim().length > 0).map((c) => c.trim());
+    }
+    if (typeof value === "string" && value.trim().length > 0) {
+      const raw = value.trim();
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((c): c is string => typeof c === "string" && c.trim().length > 0).map((c) => c.trim());
+        }
+      } catch {
+        // not JSON
+      }
+      return raw.split(",").map((c) => c.trim()).filter(Boolean);
+    }
+    return [];
+  };
+
+  const parseImgsPorColor = (value: unknown): Record<string, string> => {
+    let source = value;
+    if (typeof source === "string" && source.trim().length > 0) {
+      try {
+        source = JSON.parse(source);
+      } catch {
+        return {};
+      }
+    }
+    if (!source || typeof source !== "object" || Array.isArray(source)) return {};
+    const out: Record<string, string> = {};
+    for (const [key, val] of Object.entries(source as Record<string, unknown>)) {
+      if (typeof key === "string" && typeof val === "string" && val.trim().length > 0) {
+        out[key.trim()] = val;
+      }
+    }
+    return out;
+  };
+
   const editar = (p: Producto) => {
     if (p.coleccion_id) setColeccionId(p.coleccion_id);
     setEditingId(p.id);
     const imgs = Array.isArray(p.imagenes) ? (p.imagenes as string[]) : [];
-    const imgsPorColor = (p.imagenesPorColor && typeof p.imagenesPorColor === 'object' ? (p.imagenesPorColor as Record<string, string>) : (p.imagenes_por_color && typeof p.imagenes_por_color === 'object' ? (p.imagenes_por_color as Record<string, string>) : {}));
+    const imgsPorColor = { ...parseImgsPorColor(p.imagenes_por_color), ...parseImgsPorColor(p.imagenesPorColor) };
+    const coloresHilo = parseColoresHilo(p.colores_hilo);
+    const coloresHiloConFoto = Array.from(new Set([...coloresHilo, ...Object.keys(imgsPorColor)]));
     setForm({
       nombre: p.nombre,
        slug: p.slug || "",
-       grupo: (p as { grupo?: string }).grupo || "",
       coleccion: "Soberbia",
       linea: p.linea === "SINGULAR" ? "singular" : "origen",
       precio: p.precio_cop || 0,
@@ -176,7 +215,7 @@ export default function AdminProductos() {
       tamanoGema: String((p.especificaciones && p.especificaciones.piedra) || ""),
       requiereTalla: Array.isArray(p.tallas) && (p.tallas as unknown[]).length > 0,
       tallas: Array.isArray(p.tallas) ? (p.tallas as string[]).join(", ") : "",
-      coloresHilo: Array.isArray(p.colores_hilo) ? (p.colores_hilo as string[]) : [],
+      coloresHilo: coloresHiloConFoto,
       imagenesPorColor: imgsPorColor
     });
     setSelectedFiles([]);
@@ -220,7 +259,7 @@ export default function AdminProductos() {
                   className="cta-btn admin-btn--new"
                   onClick={() => {
                     setEditingId(null);
-                    setForm({ nombre: "", slug: "", grupo: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
+                    setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
                     setSelectedFiles([]);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
@@ -292,10 +331,6 @@ export default function AdminProductos() {
                     <option key={c.id} value={c.id}>{c.nombre}</option>
                   ))}
                 </select>
-              </div>
-              <div className="admin-form-field">
-                <label className="admin-form-label">Grupo / Familia (para variantes por color)</label>
-                <input className="form-input" placeholder="ej. anillo-nudo-sutil" value={form.grupo} onChange={(e) => setForm({ ...form, grupo: e.target.value })} />
               </div>
               <div className="admin-form-field">
                 <label className="admin-form-label">Precio COP</label>
