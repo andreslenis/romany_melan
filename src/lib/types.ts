@@ -24,6 +24,22 @@ export interface ColorHilo {
 
 export type ModoAcceso = "disponible" | "circulo" | "espera";
 
+export type ModoColeccion = "activa" | "proximamente" | "inactiva";
+
+export interface Coleccion {
+  id: string;
+  nombre: string;
+  slug: string;
+  descripcion?: string;
+  foto_url?: string;
+  texto_boton?: string;
+  descripcion_larga?: string;
+  lema?: string;
+  acento_color_hex?: string;
+  activa?: boolean;
+  modo_acceso?: ModoColeccion;
+}
+
 export interface Producto {
   slug: string;
   nombre: string;
@@ -62,6 +78,7 @@ export interface CartItem {
   colorHilo: string | null;
   colorHiloHex: string | null;
   observaciones: string;
+  coleccion?: string | null;
 }
 
 export interface DireccionEnvio {
