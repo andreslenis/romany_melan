@@ -6,10 +6,29 @@ import { useEffect, useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import { PECADOS } from "@/lib/pecados";
+import { usePerfil } from "@/context/ProfileContext";
+import { supabase } from "@/lib/supabase/client";
+import type { Coleccion } from "@/lib/types";
 
 export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalSlug, setModalSlug] = useState("");
+  const [modalNombre, setModalNombre] = useState("");
+  const [colecciones, setColecciones] = useState<Coleccion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { solicitarEspera } = usePerfil();
+  const [emailEspera, setEmailEspera] = useState("");
+  const [esperaEnviada, setEsperaEnviada] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from("colecciones").select("*").order("nombre");
+      const cols = (data || []) as Coleccion[];
+      setColecciones(cols.filter((c) => c.modo_acceso !== "inactiva"));
+      setLoading(false);
+    };
+    load();
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -26,6 +45,21 @@ export default function Home() {
     document.querySelectorAll(".fade-in").forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
+
+  const handleEspera = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const email = emailEspera.trim();
+    if (!email) return;
+    solicitarEspera({
+      slug: modalSlug,
+      nombre: modalNombre,
+      email,
+      linea: "origen",
+    });
+    setEmailEspera("");
+    setEsperaEnviada(true);
+    setTimeout(() => setEsperaEnviada(false), 4000);
+  };
 
   return (
     <>
@@ -107,68 +141,84 @@ export default function Home() {
         <section className="collection-section" id="coleccion">
           <div className="container">
             <header className="collection-header fade-in">
-              <h2 className="section-title">1° Colección: Los 7 Pecados Capitales</h2>
+              <Link href="#coleccion" className="cta-btn" style={{ display: "inline-block", marginBottom: "1rem" }}>
+                Colecciones
+              </Link>
               <p className="collection-intro">
-                Te invitamos a un viaje íntimo hacia las facetas que definen la
-                condición humana. Esta colección explora los matices de los siete
-                pecados capitales como expresiones universales que hacen parte de
-                nuestras emociones. Conoce la historia detrás de cada pecado y
-                descubre cómo llevarlo adherido a la piel.
+                Explora nuestras colecciones. Cada una tiene su propia historia,
+                color y camino. Elige la que resuene contigo.
               </p>
             </header>
             <div className="cards-grid">
-              {PECADOS.map((pecado) => {
-                const contenido = (
-                  <>
-                    <div
-                      className="card-media"
-                      style={{ backgroundImage: `url('${pecado.imagen}')` }}
-                    />
-                    <div className="card-content">
-                      <header className="card-header">
-                        <span className="card-number">{pecado.numero}</span>
-                        <h3 className="card-title">{pecado.titulo}</h3>
-                        <p className="card-subtitle">{pecado.subtitulo}</p>
-                      </header>
-                      <footer className="card-footer">
-                        <span
-                          className={`card-badge ${
-                            pecado.slug === "soberbia" ? "active" : ""
-                          }`}
-                          onClick={
-                            pecado.slug !== "soberbia"
-                              ? () => setModalOpen(true)
-                              : undefined
-                          }
-                          style={
-                            pecado.slug !== "soberbia"
-                              ? { cursor: "pointer" }
-                              : undefined
-                          }
-                        >
-                          {pecado.slug === "soberbia"
-                            ? "Descubrir el Brillo de Soberbia"
-                            : "Revelar Historia Próximamente"}
-                        </span>
-                      </footer>
-                    </div>
-                  </>
-                );
+              {loading ? (
+                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "3rem" }}>Cargando colecciones…</div>
+              ) : colecciones.length === 0 ? (
+                <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "3rem" }}>No hay colecciones disponibles.</div>
+              ) : (
+                colecciones.map((c) => {
+                  const esActiva = c.modo_acceso === "activa";
+                  const contenido = (
+                    <>
+                      <div
+                        className="card-media"
+                        style={{
+                          backgroundImage: c.foto_url ? `url('${c.foto_url}')` : "none",
+                          backgroundColor: c.acento_color_hex ? `${c.acento_color_hex}20` : undefined,
+                        }}
+                      />
+                      <div className="card-content">
+                        <header className="card-header">
+                          <h3 className="card-title">{c.nombre}</h3>
+                          {c.lema && <p className="card-subtitle">{c.lema}</p>}
+                        </header>
+                        <footer className="card-footer">
+                          <span
+                            className="card-badge"
+                            onClick={
+                              esActiva || c.modo_acceso === "proximamente"
+                                ? undefined
+                                : undefined
+                            }
+                          >
+                            {c.texto_boton || "Ingresar a la Colección"}
+                          </span>
+                        </footer>
+                      </div>
+                    </>
+                  );
 
-                return pecado.slug === "soberbia" ? (
-                  <Link
-                    key={pecado.slug}
-                    href="/coleccion/soberbia"
-                    className="card card--soberbia card--link"
-                  >
-                    {contenido}
-                  </Link>
-                ) : (
-                  <article key={pecado.slug} className="card">
-                    {contenido}
-                  </article>
-                );
-              })}
+                  if (esActiva) {
+                    return (
+                      <Link
+                        key={c.id}
+                        href={`/coleccion/${c.slug}`}
+                        className="card card--link"
+                      >
+                        {contenido}
+                      </Link>
+                    );
+                  }
+
+                  if (c.modo_acceso === "proximamente") {
+                    return (
+                      <article
+                        key={c.id}
+                        className="card"
+                        onClick={() => {
+                          setModalSlug(c.slug);
+                          setModalNombre(c.nombre);
+                          setModalOpen(true);
+                        }}
+                        style={{ cursor: "pointer" }}
+                      >
+                        {contenido}
+                      </article>
+                    );
+                  }
+
+                  return null;
+                })
+              )}
             </div>
           </div>
         </section>
@@ -199,19 +249,38 @@ export default function Home() {
               textAlign: "center",
             }}
           >
-            <p>Sé el primero en el Círculo en conocer este lanzamiento.</p>
-            <input
-              type="email"
-              placeholder="tu@email.com"
-              style={{ width: "100%", marginTop: "1rem", padding: "0.5rem" }}
-            />
-            <button
-              className="cta-btn"
-              style={{ marginTop: "1rem" }}
-              onClick={() => setModalOpen(false)}
-            >
-              Enviar
-            </button>
+            <p>Sé el primero en conocer el estreno de <strong>{modalNombre}</strong>.</p>
+            {!esperaEnviada ? (
+              <>
+                <input
+                  type="email"
+                  placeholder="tu@email.com"
+                  value={emailEspera}
+                  onChange={(e) => setEmailEspera(e.target.value)}
+                  style={{ width: "100%", marginTop: "1rem", padding: "0.5rem" }}
+                />
+                <button
+                  className="cta-btn"
+                  style={{ marginTop: "1rem" }}
+                  onClick={(e) => { e.preventDefault(); handleEspera(e as unknown as React.FormEvent<HTMLFormElement>); }}
+                >
+                  Avísame cuando se estrene
+                </button>
+              </>
+            ) : (
+              <>
+                <p style={{ marginTop: "1rem", color: "var(--color-accent)", fontWeight: 600 }}>
+                  Te avisaremos por correo cuando {modalNombre} se estrene.
+                </p>
+                <button
+                  className="cta-btn"
+                  style={{ marginTop: "1rem" }}
+                  onClick={() => setModalOpen(false)}
+                >
+                  Cerrar
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

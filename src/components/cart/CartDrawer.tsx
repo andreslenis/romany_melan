@@ -100,6 +100,9 @@ export default function CartDrawer() {
                       />
                     </div>
                     <div className="cart-item-info">
+                      {item.coleccion && (
+                        <p className="cart-item-coleccion">{item.coleccion}</p>
+                      )}
                       <p className="cart-item-name">{item.nombre}</p>
                       <p className="cart-item-line">{item.linea}</p>
                       {item.colorHiloHex && (

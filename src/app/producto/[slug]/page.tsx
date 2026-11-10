@@ -30,6 +30,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
 
   const [productoBase, setProductoBase] = useState<DBProd | null>(null);
   const [variantes, setVariantes] = useState<DBProd[]>([]);
+  const [coleccionNombre, setColeccionNombre] = useState<string | null>(null);
   const [lineaActiva, setLineaActiva] = useState<Linea>("origen");
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [colorHilo, setColorHilo] = useState<string | null>(null);
@@ -85,6 +86,10 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
       if (!p) { setProductoBase(null); setVariantes([]); setColorHilo(null); return; }
       const prod = p as DBProd;
       setProductoBase(prod);
+      if (prod.coleccion_id) {
+        const { data: col } = await supabase.from("colecciones").select("nombre").eq("id", prod.coleccion_id).maybeSingle();
+        if (col && typeof col === "object" && "nombre" in col) setColeccionNombre(String(col.nombre));
+      }
       const prodLinea = String(prod.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
       setLineaActiva(prodLinea);
       setSelectedSize(Array.isArray(prod.tallas) && prod.tallas.length ? String(prod.tallas[0]) : null);
@@ -248,7 +253,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
         prodAny.precioCop ??
         0
     );
-    addItem({
+      addItem({
       slug: producto.slug,
       nombre: producto.nombre,
       linea: LINEAS_CORTAS[lineaNormProducto as Linea],
@@ -259,6 +264,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
       colorHilo: esSingular ? null : colorActivoValido,
       colorHiloHex: esSingular ? null : (colorActivoValido ? colorPorId(colorActivoValido)?.hex ?? null : null),
       observaciones,
+      coleccion: coleccionNombre,
     });
   };
 
