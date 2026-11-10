@@ -141,7 +141,9 @@ export default function Home() {
         <section className="collection-section" id="coleccion">
           <div className="container">
             <header className="collection-header fade-in">
-              <h2 className="section-title">Colecciones</h2>
+              <Link href="#coleccion" className="cta-btn" style={{ display: "inline-block", marginBottom: "1rem" }}>
+                Colecciones
+              </Link>
               <p className="collection-intro">
                 Explora nuestras colecciones. Cada una tiene su propia historia,
                 color y camino. Elige la que resuene contigo.

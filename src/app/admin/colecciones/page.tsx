@@ -197,7 +197,7 @@ export default function AdminColecciones() {
                     <td style={{ textAlign: "center" }}>{c.modo_acceso || "activa"}</td>
                     <td>
                       {c.foto_url ? (
-                        <img src={c.foto_url} alt="" className="admin-coleccion-foto" />
+                        <img src={c.foto_url} alt="" className="admin-coleccion-foto" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 4 }} />
                       ) : (
                         <span className="admin-coleccion-sinfoto">-</span>
                       )}

@@ -72,8 +72,6 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
   const norm = (l: string | number | boolean | null | undefined) => String(l).toLowerCase();
   const productosLinea = productos.filter((p) => norm(p.linea) === linea);
 
-  const accentStyle = coleccion?.acento_color_hex ? { color: coleccion.acento_color_hex } : {};
-
   if (loading) {
     return (
       <>
@@ -105,17 +103,11 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
     <>
       <SiteHeader />
       <main className="collection-page">
-        <section className="collection-hero" style={{ backgroundColor: coleccion.acento_color_hex ? `${coleccion.acento_color_hex}15` : undefined }}>
+        <section className="collection-hero">
           <div className="container collection-hero-content">
-            {coleccion.foto_url && (
-              <Image src={coleccion.foto_url} alt={coleccion.nombre} fill style={{ objectFit: "cover", width: 120, height: 120, borderRadius: "50%" }} sizes="120px" />
-            )}
-            <h1 className="collection-hero-title" style={accentStyle}>{(coleccion.nombre || slug).toUpperCase()}</h1>
+            <h1 className="collection-hero-title" style={{ color: "#111111" }}>{(coleccion.nombre || slug).toUpperCase()}</h1>
             {coleccion.lema && <p className="collection-hero-subtitle">{coleccion.lema}</p>}
             {coleccion.descripcion_larga && <p className="collection-hero-text">{coleccion.descripcion_larga}</p>}
-            <Link href={`/coleccion/${coleccion.slug}`} className="cta-btn" style={{ marginTop: "1rem", display: "inline-block" }}>
-              {coleccion.texto_boton || "Ingresar a la Colección"}
-            </Link>
           </div>
         </section>
 
