@@ -7,20 +7,13 @@ import { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
 
-const ENLACES = [
+const ENLACES_DESKTOP = [
   { href: "/", label: "Inicio" },
-  {
-    label: "Colección 7 Pecados",
-    submenu: [
-      { href: "/coleccion/soberbia", label: "Soberbia" },
-      { href: "/#coleccion", label: "Ira (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Gula (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Envidia (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Lujuria (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Pereza (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Avaricia (Próximamente)", disabled: true },
-    ],
-  },
+  { href: "/autora", label: "La Autora" },
+];
+
+const ENLACES_MOBILE = [
+  { href: "/", label: "Inicio" },
   { href: "/autora", label: "La Autora" },
 ];
 
@@ -57,7 +50,6 @@ const ICON_CLOSE = (
 
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
-  const [submenuOpen, setSubmenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { count, open, hydrated } = useCart();
   const { perfil } = usePerfil();
@@ -69,65 +61,30 @@ export default function SiteHeader() {
     const handleScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
-
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        submenuOpen &&
-        !document.querySelector(".nav-submenu-wrap")?.contains(target)
-      ) {
-        setSubmenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [submenuOpen]);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
 
-  const renderNavLinks = (onClose?: () => void) => (
+  const renderDesktopLinks = () => (
     <ul className="nav-links">
-      {ENLACES.map((enlace) => (
-        <li key={enlace.label} className={enlace.submenu ? "nav-item nav-item--has-submenu" : "nav-item"}>
-          {enlace.submenu ? (
-            <div className="nav-submenu-wrap">
-              <button
-                className="nav-link nav-link--btn"
-                aria-haspopup="true"
-                aria-expanded={submenuOpen}
-                onClick={() => setSubmenuOpen((prev) => !prev)}
-              >
-                {enlace.label}
-              </button>
-              <ul className={`nav-submenu ${submenuOpen ? "nav-submenu--open" : ""}`}>
-                {enlace.submenu.map((sub) => (
-                  <li key={sub.label}>
-                    {sub.disabled ? (
-                      <span className="nav-submenu-item nav-submenu-item--disabled">{sub.label}</span>
-                    ) : (
-                      <Link
-                        className="nav-submenu-item"
-                        href={sub.href}
-                        onClick={() => {
-                          setSubmenuOpen(false);
-                          onClose?.();
-                        }}
-                      >
-                        {sub.label}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <Link className="nav-link" href={enlace.href} onClick={onClose}>
-              {enlace.label}
-            </Link>
-          )}
+      {ENLACES_DESKTOP.map((enlace) => (
+        <li key={enlace.label} className="nav-item">
+          <Link className="nav-link" href={enlace.href}>
+            {enlace.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
+  const renderMobileLinks = (onClose?: () => void) => (
+    <ul className="nav-links">
+      {ENLACES_MOBILE.map((enlace) => (
+        <li key={enlace.label} className="nav-item">
+          <Link className="nav-link" href={enlace.href} onClick={onClose}>
+            {enlace.label}
+          </Link>
         </li>
       ))}
     </ul>
@@ -151,7 +108,7 @@ export default function SiteHeader() {
             </button>
           )}
           <div className="nav-links-desktop">
-            {renderNavLinks()}
+            {renderDesktopLinks()}
           </div>
           <button
             className="icon-btn nav-hamburger"
@@ -194,7 +151,7 @@ export default function SiteHeader() {
             </>
           )}
           <button
-            className="icon-btn"
+            className="icon-btn cart-btn"
             onClick={open}
             aria-label="Abrir carrito de compras"
             title="Carrito"
@@ -237,7 +194,7 @@ export default function SiteHeader() {
           </button>
         </div>
         <nav className="mobile-menu-nav">
-          {renderNavLinks(closeMobileMenu)}
+          {renderMobileLinks(closeMobileMenu)}
         </nav>
         <div className="mobile-menu-footer">
           {perfil ? (
@@ -269,21 +226,6 @@ export default function SiteHeader() {
               </Link>
             </div>
           )}
-          <button
-            className="mobile-menu-cart-link"
-            onClick={() => { open(); closeMobileMenu(); }}
-            aria-label="Abrir carrito de compras"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M3 4H5L6.68 14.39C6.77 15.05 7.25 15.57 7.89 15.73L16.16 18.06C16.87 18.26 17.61 17.9 17.89 17.23L20 10H6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="9" cy="21" r="1" fill="currentColor" />
-              <circle cx="17" cy="21" r="1" fill="currentColor" />
-            </svg>
-            <span>Carrito</span>
-            {hydrated && count > 0 && (
-              <span className="cart-count">{count}</span>
-            )}
-          </button>
         </div>
       </aside>
     </header>
