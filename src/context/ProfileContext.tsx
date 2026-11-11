@@ -172,6 +172,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
             proveedor: datos.proveedor ?? "manual",
             desde: new Date().toISOString(),
           });
+
+          try {
+            await fetch("/api/auth/welcome-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: datos.email, nombre: datos.nombre }),
+            });
+          } catch (emailError) {
+            console.warn("[ProfileContext] Error enviando email de bienvenida (no bloqueante):", emailError);
+          }
         }
       } catch (e) {
         console.error("Signup error:", e);
