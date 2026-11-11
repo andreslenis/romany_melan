@@ -12,11 +12,6 @@ const ENLACES_DESKTOP = [
   { href: "/autora", label: "La Autora" },
 ];
 
-const ENLACES_MOBILE = [
-  { href: "/", label: "Inicio" },
-  { href: "/autora", label: "La Autora" },
-];
-
 const ICON_USER = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -33,24 +28,8 @@ const ICON_USER_PLUS = (
   </svg>
 );
 
-const ICON_HAMBURGER = (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="3" y1="6" x2="21" y2="6" />
-    <line x1="3" y1="12" x2="21" y2="12" />
-    <line x1="3" y1="18" x2="21" y2="18" />
-  </svg>
-);
-
-const ICON_CLOSE = (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
-
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { count, open, hydrated } = useCart();
   const { perfil } = usePerfil();
   const pathname = usePathname();
@@ -64,8 +43,6 @@ export default function SiteHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const closeMobileMenu = () => setMobileMenuOpen(false);
-
   const renderDesktopLinks = () => (
     <ul className="nav-links">
       {ENLACES_DESKTOP.map((enlace) => (
@@ -78,11 +55,11 @@ export default function SiteHeader() {
     </ul>
   );
 
-  const renderMobileLinks = (onClose?: () => void) => (
-    <ul className="nav-links">
-      {ENLACES_MOBILE.map((enlace) => (
+  const renderMobileLinks = () => (
+    <ul className="nav-links nav-links--mobile">
+      {ENLACES_DESKTOP.map((enlace) => (
         <li key={enlace.label} className="nav-item">
-          <Link className="nav-link" href={enlace.href} onClick={onClose}>
+          <Link className="nav-link" href={enlace.href}>
             {enlace.label}
           </Link>
         </li>
@@ -110,15 +87,9 @@ export default function SiteHeader() {
           <div className="nav-links-desktop">
             {renderDesktopLinks()}
           </div>
-          <button
-            className="icon-btn nav-hamburger"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
-            aria-expanded={mobileMenuOpen}
-            aria-controls="mobile-menu"
-          >
-            {mobileMenuOpen ? ICON_CLOSE : ICON_HAMBURGER}
-          </button>
+          <div className="nav-links-mobile">
+            {renderMobileLinks()}
+          </div>
         </div>
         <div className="nav-right">
           {perfil ? (
@@ -167,67 +138,6 @@ export default function SiteHeader() {
           </button>
         </div>
       </nav>
-
-      {mobileMenuOpen && (
-        <div
-          className="mobile-menu-overlay"
-          onClick={closeMobileMenu}
-          aria-hidden="true"
-        />
-      )}
-
-      <aside
-        id="mobile-menu"
-        className={`mobile-menu-drawer ${mobileMenuOpen ? "mobile-menu-drawer--open" : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Menú de navegación"
-      >
-        <div className="mobile-menu-header">
-          <span className="mobile-menu-title">Menú</span>
-          <button
-            className="icon-btn mobile-menu-close"
-            onClick={closeMobileMenu}
-            aria-label="Cerrar menú"
-          >
-            {ICON_CLOSE}
-          </button>
-        </div>
-        <nav className="mobile-menu-nav">
-          {renderMobileLinks(closeMobileMenu)}
-        </nav>
-        <div className="mobile-menu-footer">
-          {perfil ? (
-            <Link
-              className="mobile-menu-profile-link"
-              href="/mi-perfil"
-              onClick={closeMobileMenu}
-            >
-              <span>Mi Perfil</span>
-              {ICON_USER}
-            </Link>
-          ) : (
-            <div className="mobile-menu-auth-links">
-              <Link
-                className="mobile-menu-auth-link"
-                href="/inicio-sesion"
-                onClick={closeMobileMenu}
-              >
-                {ICON_USER}
-                <span>Iniciar sesión</span>
-              </Link>
-              <Link
-                className="mobile-menu-auth-link"
-                href="/crear-perfil"
-                onClick={closeMobileMenu}
-              >
-                {ICON_USER_PLUS}
-                <span>Crear perfil</span>
-              </Link>
-            </div>
-          )}
-        </div>
-      </aside>
     </header>
   );
 }

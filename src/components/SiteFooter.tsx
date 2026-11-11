@@ -39,28 +39,28 @@ export default function SiteFooter() {
         </ul>
         <div className="socials">
           <a
-            className="social-link"
+            className="social-link social-link--instagram"
             href="https://www.instagram.com/romanymelan?cplk=eGwzaGluNWg4amRs&utm_source=qr"
             aria-label="Instagram"
             target="_blank"
             rel="noreferrer"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.2" />
-              <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.2" />
-              <circle cx="17" cy="7" r="1" fill="currentColor" />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="3" width="18" height="18" rx="5" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="17" cy="7" r="1" />
             </svg>
           </a>
           <a
-            className="social-link"
+            className="social-link social-link--whatsapp"
             href="https://wa.me/message/MPA2IBBSX32DM1"
             aria-label="WhatsApp"
             target="_blank"
             rel="noreferrer"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.5 3.5A14 14 0 0 1 21 12c0 4.7-2.8 8.8-6.9 10.4-.5.2-1 .1-1.3-.3a12 12 0 0 1-22-13.7c.2-.5.7-1 1.2-1.3A14 14 0 0 1 17.5 3.5z" stroke="currentColor" strokeWidth="1.2" />
-              <path d="M12 9v4l2.5 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M17.5 3.5A14 14 0 0 1 21 12c0 4.7-2.8 8.8-6.9 10.4-.5.2-1 .1-1.3-.3a12 12 0 0 1-22-13.7c.2-.5.7-1 1.2-1.3A14 14 0 0 1 17.5 3.5z" />
+              <path d="M12 9v4l2.5 2" />
             </svg>
           </a>
         </div>

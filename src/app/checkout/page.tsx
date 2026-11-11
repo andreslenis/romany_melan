@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -25,6 +25,19 @@ export default function CheckoutPage() {
   const [datos, setDatos] = useState<DireccionEnvio>(datosIniciales());
   const [referencia] = useState(() => `RM-${Date.now()}-${randomId("REF")}`);
 
+  // Si hay perfil logueado, forzar modo miembro y pre-llenar datos
+  useEffect(() => {
+    if (perfil) {
+      setModo("miembro");
+      setDatos((prev) => ({
+        ...prev,
+        nombre: perfil.nombre || prev.nombre,
+        email: perfil.email || prev.email,
+        telefono: perfil.telefono || prev.telefono,
+      }));
+    }
+  }, [perfil]);
+
   const resumen = useMemo(
     () => ({
       piezas: items.reduce((acc, i) => acc + i.cantidad, 0),
@@ -34,7 +47,7 @@ export default function CheckoutPage() {
   );
 
   const handleSubmitDatos = useCallback(async () => {
-    if (modo === "miembro") {
+    if (modo === "miembro" && !perfil) {
       try {
         await registrar({
           nombre: datos.nombre,
@@ -48,7 +61,7 @@ export default function CheckoutPage() {
       }
     }
     setPaso(2);
-  }, [modo, datos, registrar]);
+  }, [modo, datos, registrar, perfil]);
 
   if (!hydrated) {
     return (
@@ -113,6 +126,7 @@ export default function CheckoutPage() {
                   onDatosChange={setDatos}
                   onModoChange={setModo}
                   onSubmit={handleSubmitDatos}
+                  perfil={perfil}
                 />
               </div>
               <aside className="checkout-aside">

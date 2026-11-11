@@ -3,7 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 
 import { ciudadesPorDepartamento, DEPARTAMENTOS } from "@/lib/colombia";
-import type { DireccionEnvio } from "@/lib/types";
+import type { DireccionEnvio, Perfil } from "@/lib/types";
 
 export type ModoRegistro = "invitado" | "miembro";
 
@@ -13,6 +13,7 @@ interface Props {
   onDatosChange: (datos: DireccionEnvio) => void;
   onModoChange: (modo: ModoRegistro) => void;
   onSubmit: () => void;
+  perfil?: Perfil | null;
 }
 
 const DATOS_VACIOS: DireccionEnvio = {
@@ -37,6 +38,7 @@ export default function CheckoutForm({
   onDatosChange,
   onModoChange,
   onSubmit,
+  perfil,
 }: Props) {
   const [errores, setErrores] = useState<Record<string, string>>({});
 
@@ -122,52 +124,54 @@ export default function CheckoutForm({
         </div>
       </section>
 
-      <section className="checkout-block">
-        <h3 className="checkout-block-title">Identificación</h3>
-        <div className="register-options">
-          <label className="register-option">
-            <input
-              type="checkbox"
-              checked={modo === "invitado"}
-              onChange={() => onModoChange("invitado")}
-            />
-            <span className="register-option-body">
-              <span className="register-option-label">Comprar como invitado</span>
-              <span className="register-option-desc">
-                Finalizas la compra sin crear un perfil. No podrás consultar Mis
-                Historias después.
+      {!perfil && (
+        <section className="checkout-block">
+          <h3 className="checkout-block-title">Identificación</h3>
+          <div className="register-options">
+            <label className="register-option">
+              <input
+                type="checkbox"
+                checked={modo === "invitado"}
+                onChange={() => onModoChange("invitado")}
+              />
+              <span className="register-option-body">
+                <span className="register-option-label">Comprar como invitado</span>
+                <span className="register-option-desc">
+                  Finalizas la compra sin crear un perfil. No podrás consultar Mis
+                  Historias después.
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
 
-          <label className="register-option">
-            <input
-              type="checkbox"
-              checked={modo === "miembro"}
-              onChange={() => onModoChange("miembro")}
-            />
-            <span className="register-option-body">
-              <span className="register-option-label">
-                Crear mi Perfil en el Círculo Romany Melan
+            <label className="register-option">
+              <input
+                type="checkbox"
+                checked={modo === "miembro"}
+                onChange={() => onModoChange("miembro")}
+              />
+              <span className="register-option-body">
+                <span className="register-option-label">
+                  Crear mi Perfil en el Círculo Romany Melan
+                </span>
+                <span className="register-option-desc register-option-desc--quote">
+                  &ldquo;Deseo registrarme para recibir acceso privado a la futura
+                  Línea Singular (Oro Macizo 18K) y colecciones de edición
+                  limitada.&rdquo;
+                </span>
+                {modo === "miembro" && (
+                  <a
+                    href="/crear-perfil?return=/checkout"
+                    className="pdp-add-btn"
+                    style={{ marginTop: "0.75rem", display: "inline-flex", width: "auto" }}
+                  >
+                    Ir a crear perfil
+                  </a>
+                )}
               </span>
-              <span className="register-option-desc register-option-desc--quote">
-                &ldquo;Deseo registrarme para recibir acceso privado a la futura
-                Línea Singular (Oro Macizo 18K) y colecciones de edición
-                limitada.&rdquo;
-              </span>
-              {modo === "miembro" && (
-                <a
-                  href="/crear-perfil?return=/checkout"
-                  className="pdp-add-btn"
-                  style={{ marginTop: "0.75rem", display: "inline-flex", width: "auto" }}
-                >
-                  Ir a crear perfil
-                </a>
-              )}
-            </span>
-          </label>
-        </div>
-      </section>
+            </label>
+          </div>
+        </section>
+      )}
 
       <section className="checkout-block">
         <h3 className="checkout-block-title">Dirección de entrega</h3>

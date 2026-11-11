@@ -12,6 +12,7 @@ type Producto = {
   slug: string;
   coleccion_id?: string;
   linea?: string;
+  modo_acceso?: string;
   precio_cop?: number;
   stock_disponible?: number;
   activo?: boolean;
@@ -35,6 +36,7 @@ export default function AdminProductos() {
     slug: "",
     coleccion: "Soberbia",
     linea: "origen",
+    modoAcceso: "disponible",
     precio: 0,
     stock: 0,
     historia: "",
@@ -112,6 +114,7 @@ export default function AdminProductos() {
          nombre: form.nombre,
           slug: form.slug || form.nombre.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
          linea: form.linea === "singular" ? "SINGULAR" : "ORIGEN",
+         modo_acceso: form.modoAcceso,
         precio_cop: Number(form.precio) || 0,
         stock_disponible: Number(form.stock) || 0,
         historia_narrativa: form.historia,
@@ -144,7 +147,7 @@ export default function AdminProductos() {
         }
         if (data && data[0]) setProductos((prev) => [data[0] as Producto, ...prev]);
       }
-      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
+      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", modoAcceso: "disponible", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
       setSelectedFiles([]);
       setEditingId(null);
       load();
@@ -204,6 +207,7 @@ export default function AdminProductos() {
        slug: p.slug || "",
       coleccion: "Soberbia",
       linea: p.linea === "SINGULAR" ? "singular" : "origen",
+      modoAcceso: p.modo_acceso || "disponible",
       precio: p.precio_cop || 0,
       stock: p.stock_disponible || 0,
       historia: p.historia_narrativa || "",
@@ -259,7 +263,7 @@ export default function AdminProductos() {
                   className="cta-btn admin-btn--new"
                   onClick={() => {
                     setEditingId(null);
-                    setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
+                    setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", modoAcceso: "disponible", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
                     setSelectedFiles([]);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
@@ -322,6 +326,13 @@ export default function AdminProductos() {
                 <select className="form-input" value={form.linea} onChange={(e) => setForm({ ...form, linea: e.target.value })}>
                   <option value="origen">Línea Origen</option>
                   <option value="singular">Línea Singular</option>
+                </select>
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Modo de Acceso</label>
+                <select className="form-input" value={form.modoAcceso} onChange={(e) => setForm({ ...form, modoAcceso: e.target.value })}>
+                  <option value="disponible">Disponible (Stock Abierto)</option>
+                  <option value="circulo">Círculo (Solo Miembros)</option>
                 </select>
               </div>
               <div className="admin-form-field">
