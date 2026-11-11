@@ -39,7 +39,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   const [observaciones, setObservaciones] = useState("");
   const [emailEspera, setEmailEspera] = useState("");
   const [esperaRegistrada, setEsperaRegistrada] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
 
   const getImgsPorColor = (p: DBProd | null): Record<string, string> => {
@@ -132,7 +131,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
 
   const handleShareWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareUrl)}`, "_blank");
-    setShareOpen(false);
   };
 
   const handleShareCopy = async () => {
@@ -150,10 +148,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2000);
     }
-  };
-
-  const handleShareInstagram = () => {
-    handleShareCopy();
   };
 
   const coloresDisponibles = (() => {
@@ -458,49 +452,22 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 <div className="pdp-share">
                   <button
                     type="button"
-                    className="pdp-share-btn"
-                    onClick={() => setShareOpen(!shareOpen)}
-                    aria-label="Compartir producto"
-                    aria-expanded={shareOpen}
+                    className="pdp-share-btn pdp-share-btn--whatsapp"
+                    onClick={handleShareWhatsApp}
+                    aria-label="Compartir por WhatsApp"
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="18" cy="5" r="3" />
-                      <circle cx="6" cy="12" r="3" />
-                      <circle cx="18" cy="19" r="3" />
-                      <path d="M8.59 13.51a5 5 0 0 1 7.41 0M15.49 19.51a5 5 0 0 1-7.41 0" />
-                    </svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 3.5A14 14 0 0 1 21 12c0 4.7-2.8 8.8-6.9 10.4-.5.2-1 .1-1.3-.3a12 12 0 0 1-22-13.7c.2-.5.7-1 1.2-1.3A14 14 0 0 1 17.5 3.5z" /><path d="M12 9v4l2.5 2" /></svg>
+                    <span>WhatsApp</span>
                   </button>
-                  {shareOpen && (
-                    <div className="pdp-share-dropdown" role="menu">
-                      <button
-                        type="button"
-                        className="pdp-share-option"
-                        role="menuitem"
-                        onClick={handleShareWhatsApp}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 3.5A14 14 0 0 1 21 12c0 4.7-2.8 8.8-6.9 10.4-.5.2-1 .1-1.3-.3a12 12 0 0 1-22-13.7c.2-.5.7-1 1.2-1.3A14 14 0 0 1 17.5 3.5z" /><path d="M12 9v4l2.5 2" /></svg>
-                        <span>WhatsApp</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="pdp-share-option"
-                        role="menuitem"
-                        onClick={handleShareCopy}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                        <span>{shareCopied ? "¡Copiado!" : "Copiar enlace"}</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="pdp-share-option"
-                        role="menuitem"
-                        onClick={handleShareInstagram}
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.5" /><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5" /><circle cx="17" cy="7" r="1" fill="currentColor" /></svg>
-                        <span>Instagram (copiar enlace)</span>
-                      </button>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    className="pdp-share-btn pdp-share-btn--copy"
+                    onClick={handleShareCopy}
+                    aria-label="Copiar enlace del producto"
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                    <span>{shareCopied ? "¡Copiado!" : "Copiar enlace"}</span>
+                  </button>
                 </div>
               </div>
 
@@ -561,15 +528,18 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 <div className="pdp-size-block">
                   <h3 className="pdp-block-title">Talla</h3>
                   <div className="pdp-size-options">
-                    {producto.tallas.map((t: string | number) => (
-                      <button
-                        key={String(t)}
-                        className={`pdp-size-btn ${selectedSize === String(t) ? "active" : ""}`}
-                        onClick={() => setSelectedSize(String(t))}
-                      >
-                        {t}
-                      </button>
-                    ))}
+                    <select
+                      className="pdp-size-select"
+                      value={selectedSize || ""}
+                      onChange={(e) => setSelectedSize(e.target.value || null)}
+                    >
+                      <option value="">Seleccionar talla</option>
+                      {producto.tallas.map((t: string | number) => (
+                        <option key={String(t)} value={String(t)}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}

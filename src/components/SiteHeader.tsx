@@ -40,9 +40,25 @@ const ICON_USER_PLUS = (
   </svg>
 );
 
+const ICON_HAMBURGER = (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+const ICON_CLOSE = (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [submenuOpen, setSubmenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { count, open, hydrated } = useCart();
   const { perfil } = usePerfil();
   const pathname = usePathname();
@@ -70,6 +86,53 @@ export default function SiteHeader() {
     };
   }, [submenuOpen]);
 
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const renderNavLinks = (onClose?: () => void) => (
+    <ul className="nav-links">
+      {ENLACES.map((enlace) => (
+        <li key={enlace.label} className={enlace.submenu ? "nav-item nav-item--has-submenu" : "nav-item"}>
+          {enlace.submenu ? (
+            <div className="nav-submenu-wrap">
+              <button
+                className="nav-link nav-link--btn"
+                aria-haspopup="true"
+                aria-expanded={submenuOpen}
+                onClick={() => setSubmenuOpen((prev) => !prev)}
+              >
+                {enlace.label}
+              </button>
+              <ul className={`nav-submenu ${submenuOpen ? "nav-submenu--open" : ""}`}>
+                {enlace.submenu.map((sub) => (
+                  <li key={sub.label}>
+                    {sub.disabled ? (
+                      <span className="nav-submenu-item nav-submenu-item--disabled">{sub.label}</span>
+                    ) : (
+                      <Link
+                        className="nav-submenu-item"
+                        href={sub.href}
+                        onClick={() => {
+                          setSubmenuOpen(false);
+                          onClose?.();
+                        }}
+                      >
+                        {sub.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <Link className="nav-link" href={enlace.href} onClick={onClose}>
+              {enlace.label}
+            </Link>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <header className={`header ${scrolled ? "scrolled" : ""}`} id="header">
       <nav className="nav">
@@ -87,45 +150,18 @@ export default function SiteHeader() {
               </svg>
             </button>
           )}
-          <ul className="nav-links">
-            {ENLACES.map((enlace) => (
-              <li key={enlace.label} className={enlace.submenu ? "nav-item nav-item--has-submenu" : "nav-item"}>
-                {enlace.submenu ? (
-                  <div className="nav-submenu-wrap">
-                    <button
-                      className="nav-link nav-link--btn"
-                      aria-haspopup="true"
-                      aria-expanded={submenuOpen}
-                      onClick={() => setSubmenuOpen((prev) => !prev)}
-                    >
-                      {enlace.label}
-                    </button>
-                    <ul className={`nav-submenu ${submenuOpen ? "nav-submenu--open" : ""}`}>
-                      {enlace.submenu.map((sub) => (
-                        <li key={sub.label}>
-                          {sub.disabled ? (
-                            <span className="nav-submenu-item nav-submenu-item--disabled">{sub.label}</span>
-                          ) : (
-                            <Link
-                              className="nav-submenu-item"
-                              href={sub.href}
-                              onClick={() => setSubmenuOpen(false)}
-                            >
-                              {sub.label}
-                            </Link>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <Link className="nav-link" href={enlace.href}>
-                    {enlace.label}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="nav-links-desktop">
+            {renderNavLinks()}
+          </div>
+          <button
+            className="icon-btn nav-hamburger"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+          >
+            {mobileMenuOpen ? ICON_CLOSE : ICON_HAMBURGER}
+          </button>
         </div>
         <div className="nav-right">
           {perfil ? (
@@ -174,6 +210,82 @@ export default function SiteHeader() {
           </button>
         </div>
       </nav>
+
+      {mobileMenuOpen && (
+        <div
+          className="mobile-menu-overlay"
+          onClick={closeMobileMenu}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        id="mobile-menu"
+        className={`mobile-menu-drawer ${mobileMenuOpen ? "mobile-menu-drawer--open" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú de navegación"
+      >
+        <div className="mobile-menu-header">
+          <span className="mobile-menu-title">Menú</span>
+          <button
+            className="icon-btn mobile-menu-close"
+            onClick={closeMobileMenu}
+            aria-label="Cerrar menú"
+          >
+            {ICON_CLOSE}
+          </button>
+        </div>
+        <nav className="mobile-menu-nav">
+          {renderNavLinks(closeMobileMenu)}
+        </nav>
+        <div className="mobile-menu-footer">
+          {perfil ? (
+            <Link
+              className="mobile-menu-profile-link"
+              href="/mi-perfil"
+              onClick={closeMobileMenu}
+            >
+              <span>Mi Perfil</span>
+              {ICON_USER}
+            </Link>
+          ) : (
+            <div className="mobile-menu-auth-links">
+              <Link
+                className="mobile-menu-auth-link"
+                href="/inicio-sesion"
+                onClick={closeMobileMenu}
+              >
+                {ICON_USER}
+                <span>Iniciar sesión</span>
+              </Link>
+              <Link
+                className="mobile-menu-auth-link"
+                href="/crear-perfil"
+                onClick={closeMobileMenu}
+              >
+                {ICON_USER_PLUS}
+                <span>Crear perfil</span>
+              </Link>
+            </div>
+          )}
+          <button
+            className="mobile-menu-cart-link"
+            onClick={() => { open(); closeMobileMenu(); }}
+            aria-label="Abrir carrito de compras"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 4H5L6.68 14.39C6.77 15.05 7.25 15.57 7.89 15.73L16.16 18.06C16.87 18.26 17.61 17.9 17.89 17.23L20 10H6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="9" cy="21" r="1" fill="currentColor" />
+              <circle cx="17" cy="21" r="1" fill="currentColor" />
+            </svg>
+            <span>Carrito</span>
+            {hydrated && count > 0 && (
+              <span className="cart-count">{count}</span>
+            )}
+          </button>
+        </div>
+      </aside>
     </header>
   );
 }
