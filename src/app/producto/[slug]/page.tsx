@@ -14,6 +14,8 @@ import { supabase } from "@/lib/supabase/client";
 import { COLORES_HILO, colorPorId } from "@/lib/pecados";
 import { LINEAS_CORTAS, type Linea } from "@/lib/types";
 
+const SHARE_URL_BASE = typeof window !== "undefined" ? window.location.origin : "https://www.romanymelan.com";
+
 export default function ProductoPDP({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { addItem } = useCart();
@@ -37,6 +39,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   const [observaciones, setObservaciones] = useState("");
   const [emailEspera, setEmailEspera] = useState("");
   const [esperaRegistrada, setEsperaRegistrada] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const getImgsPorColor = (p: DBProd | null): Record<string, string> => {
     if (!p) return {};
@@ -123,6 +126,29 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   const slugActivo = producto?.slug;
   const lineaNormProducto = String(producto?.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
   const esSingular = lineaNormProducto === "singular";
+
+  const shareUrl = `${SHARE_URL_BASE}/producto/${slugActivo}`;
+
+  const handleShareWhatsApp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(shareUrl)}`, "_blank");
+  };
+
+  const handleShareCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = shareUrl;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    }
+  };
 
   const coloresDisponibles = (() => {
     if (!producto || esSingular) return [];
@@ -408,7 +434,19 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
             <div className="pdp-info">
               <div className="pdp-header">
                 <h1 className="pdp-title">{producto.nombre}</h1>
-                {descripcionCorta && <p className="pdp-description">{descripcionCorta}</p>}
+                <p className="pdp-price">{precioFormato}</p>
+                {descripcionCorta && (
+                  <div className="pdp-accordion">
+                    <div className="pdp-accordion-item">
+                      <details>
+                        <summary>Descripción</summary>
+                        <div className="pdp-accordion-content">
+                          <p>{descripcionCorta}</p>
+                        </div>
+                      </details>
+                    </div>
+                  </div>
+                )}
                 {historia && (
                   <div className="pdp-accordion pdp-accordion--header">
                     <div className="pdp-accordion-item">
@@ -421,8 +459,23 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                     </div>
                   </div>
                 )}
+                <details className="pdp-specs">
+                  <summary>Especificaciones técnicas</summary>
+                  <div className="pdp-specs-content">
+                    <ul>
+                      <li>
+                        <strong>Material:</strong> {producto.especificaciones?.material}
+                      </li>
+                      <li>
+                        <strong>Componentes metálicos:</strong> {producto.especificaciones?.componentes}
+                      </li>
+                      <li>
+                        <strong>Piedra:</strong> {producto.especificaciones?.piedra}
+                      </li>
+                    </ul>
+                  </div>
+                </details>
                 <p className="pdp-line">{producto.material}</p>
-                <p className="pdp-price">{precioFormato}</p>
               </div>
 
                {variantes.length > 1 && false && (
@@ -482,21 +535,24 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 <div className="pdp-size-block">
                   <h3 className="pdp-block-title">Talla</h3>
                   <div className="pdp-size-options">
-                    {producto.tallas.map((t: string | number) => (
-                      <button
-                        key={String(t)}
-                        className={`pdp-size-btn ${selectedSize === String(t) ? "active" : ""}`}
-                        onClick={() => setSelectedSize(String(t))}
-                      >
-                        {t}
-                      </button>
-                    ))}
+                    <select
+                      className="pdp-size-select"
+                      value={selectedSize || ""}
+                      onChange={(e) => setSelectedSize(e.target.value || null)}
+                    >
+                      <option value="">Seleccionar talla</option>
+                      {producto.tallas.map((t: string | number) => (
+                        <option key={String(t)} value={String(t)}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}
 
               <div className="pdp-observaciones">
-                <h3 className="pdp-block-title">Observaciones de la pieza</h3>
+                <h3 className="pdp-block-title" style={{ fontWeight: 600 }}>Observaciones de la pieza</h3>
                 <p className="pdp-color-intro">¿Necesitas una talla diferente o un ajuste especial? Cuéntanoslo y lo realizamos a tus necesidades.</p>
                 <textarea
                   className="form-input form-textarea"
@@ -507,63 +563,68 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                 />
               </div>
 
-               <div className="pdp-actions">
-                 {producto.modoAcceso === "disponible" ? (
-                   <button className="pdp-add-btn" onClick={handleAddToCart}>
-                     Tejer esta Historia en mi Piel
-                   </button>
-                 ) : producto.modoAcceso === "circulo" ? (
-                   <>
-                     <Link className="pdp-add-btn pdp-add-btn--outline" href="/mi-perfil">
-                       Solicitar Acceso al Círculo
-                     </Link>
-                     <p className="pdp-access-note">Esta obra no está en stock abierto. Crea tu perfil en el Círculo para solicitar el acceso y ser notificado cuando haya una edición disponible.</p>
-                   </>
-                 ) : !esSingular ? (
-                   <button className="pdp-add-btn" onClick={handleAddToCart}>
-                     Tejer esta Historia en mi Piel
-                   </button>
-                 ) : esperaRegistrada ? (
-                   <p className="pdp-waitlist-done">
-                     Te anotamos en la lista de espera de <strong>{producto.nombre}</strong>. Te avisaremos por correo cuando abramos la próxima edición.
-                   </p>
-                 ) : (
-                   <form className="pdp-waitlist" onSubmit={handleEspera}>
-                     <label className="form-field">
-                       <span className="form-label">Correo para la lista de espera</span>
-                       <input
-                         className="form-input"
-                         type="email"
-                         value={emailEspera}
-                         onChange={(e) => setEmailEspera(e.target.value)}
-                         placeholder="tu@email.com"
-                         required
-                       />
-                     </label>
-                     <button type="submit" className="pdp-add-btn">
-                       Unirme a la Lista de Espera
-                     </button>
-                     <p className="pdp-access-note">Obra invariable de edición limitada. Guardamos tu lugar en la fila y te escribimos en cuanto haya una unidad.</p>
-                   </form>
-                 )}
-               </div>
-
-              <details className="pdp-specs">
-                <summary>Especificaciones técnicas</summary>
-                <div className="pdp-specs-content">
-                  <ul>
-                    <li>
-                      <strong>Material:</strong> {producto.especificaciones?.material}
-                    </li>
-                    <li>
-                      <strong>Componentes metálicos:</strong> {producto.especificaciones?.componentes}
-                    </li>
-                    <li>
-                      <strong>Piedra:</strong> {producto.especificaciones?.piedra}
-                    </li>
-                  </ul>
+                <div className="pdp-actions">
+                  {producto.modoAcceso === "disponible" ? (
+                    <button className="pdp-add-btn" onClick={handleAddToCart}>
+                      Tejer esta Historia en mi Piel
+                    </button>
+                  ) : producto.modoAcceso === "circulo" ? (
+                    <>
+                      <Link className="pdp-add-btn pdp-add-btn--outline" href="/mi-perfil">
+                        Solicitar Acceso al Círculo
+                      </Link>
+                      <p className="pdp-access-note">Esta obra no está en stock abierto. Crea tu perfil en el Círculo para solicitar el acceso y ser notificado cuando haya una edición disponible.</p>
+                    </>
+                  ) : !esSingular ? (
+                    <button className="pdp-add-btn" onClick={handleAddToCart}>
+                      Tejer esta Historia en mi Piel
+                    </button>
+                  ) : esperaRegistrada ? (
+                    <p className="pdp-waitlist-done">
+                      Te anotamos en la lista de espera de <strong>{producto.nombre}</strong>. Te avisaremos por correo cuando abramos la próxima edición.
+                    </p>
+                  ) : (
+                    <form className="pdp-waitlist" onSubmit={handleEspera}>
+                      <label className="form-field">
+                        <span className="form-label">Correo para la lista de espera</span>
+                        <input
+                          className="form-input"
+                          type="email"
+                          value={emailEspera}
+                          onChange={(e) => setEmailEspera(e.target.value)}
+                          placeholder="tu@email.com"
+                          required
+                        />
+                      </label>
+                      <button type="submit" className="pdp-add-btn">
+                        Unirme a la Lista de Espera
+                      </button>
+                      <p className="pdp-access-note">Obra invariable de edición limitada. Guardamos tu lugar en la fila y te escribemos en cuanto haya una unidad.</p>
+                    </form>
+                  )}
                 </div>
-              </details>
+
+                <div className="pdp-share" style={{ marginTop: "1.5rem" }}>
+                    <p className="pdp-share-note">Comparte este articulo con quien desees</p>
+                    <button
+                      type="button"
+                      className="pdp-share-btn pdp-share-btn--whatsapp"
+                      onClick={handleShareWhatsApp}
+                      aria-label="Compartir por WhatsApp"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 3.5A14 14 0 0 1 21 12c0 4.7-2.8 8.8-6.9 10.4-.5.2-1 .1-1.3-.3a12 12 0 0 1-22-13.7c.2-.5.7-1 1.2-1.3A14 14 0 0 1 17.5 3.5z" /><path d="M12 9v4l2.5 2" /></svg>
+                      <span>WhatsApp</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="pdp-share-btn pdp-share-btn--copy"
+                      onClick={handleShareCopy}
+                      aria-label="Copiar enlace del producto"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                      <span>{shareCopied ? "¡Copiado!" : "Copiar enlace"}</span>
+                    </button>
+                  </div>
 
               <div className="pdp-accordion">
                 <div className="pdp-accordion-item">
@@ -634,6 +695,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                     </div>
                   </details>
                 </div>
+
               </div>
 
               {null}

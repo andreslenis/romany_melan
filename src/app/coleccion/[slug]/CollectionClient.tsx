@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { use, useEffect, useState } from "react";
+import { usePerfil } from "@/context/ProfileContext";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { supabase } from "@/lib/supabase/client";
@@ -34,9 +35,11 @@ type Coleccion = {
 
 export default function CollectionClient({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
+  const { perfil, hydrated } = usePerfil();
   const [coleccion, setColeccion] = useState<Coleccion | null>(null);
   const [productos, setProductos] = useState<Producto[]>([]);
   const [linea, setLinea] = useState<"origen" | "singular">("origen");
+  const [singularLocked, setSingularLocked] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,6 +74,44 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
 
   const norm = (l: string | number | boolean | null | undefined) => String(l).toLowerCase();
   const productosLinea = productos.filter((p) => norm(p.linea) === linea);
+
+  const handleSelectSingular = () => {
+    if (!hydrated || !perfil) {
+      setSingularLocked(true);
+      return;
+    }
+    setSingularLocked(false);
+    setLinea("singular");
+  };
+
+  if (singularLocked) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="profile-page">
+          <div className="container profile-gate">
+            <span className="profile-gate-seal" aria-hidden="true">
+              ✦
+            </span>
+            <h1 className="profile-title">Línea Singular</h1>
+            <p className="profile-gate-text">
+              La Línea Singular (Oro Macizo 18K) es privada para miembros del
+              Círculo. Inicia sesión o crea tu perfil para acceder a ella.
+            </p>
+            <div className="profile-gate-actions">
+              <Link href="/mi-perfil" className="cta-btn">
+                Iniciar sesión
+              </Link>
+              <Link href="/crear-perfil" className="cta-btn">
+                Crear perfil
+              </Link>
+            </div>
+          </div>
+        </main>
+        <SiteFooter />
+      </>
+    );
+  }
 
   if (loading) {
     return (
@@ -114,8 +155,19 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
         <section className="line-selector">
           <div className="container line-selector-inner">
             <div className="line-tabs">
-              <button className={`line-tab ${linea === "origen" ? "active" : ""}`} onClick={() => setLinea("origen")}>Línea Origen</button>
-              <button className={`line-tab ${linea === "singular" ? "active" : ""}`} onClick={() => setLinea("singular")}>Línea Singular</button>
+              <button className={`line-tab ${linea === "origen" ? "active" : ""}`} onClick={() => { setSingularLocked(false); setLinea("origen"); }}>Línea Origen</button>
+              <button
+                className={`line-tab ${linea === "singular" ? "active" : ""} ${!perfil ? "disabled" : ""}`}
+                onClick={handleSelectSingular}
+                disabled={!perfil}
+              >
+                Línea Singular
+                <span className="line-tab-badge">
+                  {!perfil
+                    ? "Acceso Exclusivo para Miembros del Círculo"
+                    : "Edición Limitada"}
+                </span>
+              </button>
             </div>
           </div>
         </section>

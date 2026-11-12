@@ -8,10 +8,25 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import { usePerfil } from "@/context/ProfileContext";
-import { productosSingular } from "@/data/productos";
+import { supabase } from "@/lib/supabase/client";
 import { etapaActual, progresoEnvio, tiempoRestante } from "@/lib/envio";
 import { ESTADOS_ENVIO, LINEAS_CORTAS, type Pedido } from "@/lib/types";
 import { formatCOP } from "@/utils/format";
+
+type ProductoTeaser = {
+  slug: string;
+  nombre: string;
+  linea: string;
+  precio_cop?: number;
+  precio?: number;
+  precioFormato?: string;
+  material?: string;
+  imagen?: string;
+  imagenes?: string[];
+  imagenSinOptimizar?: boolean;
+  insignia?: string;
+  modoAcceso?: string;
+};
 
 export default function PerfilPage() {
   return (
@@ -36,6 +51,8 @@ function PerfilContent() {
   const searchParams = useSearchParams();
   const pedidoResaltado = searchParams.get("pedido");
   const [ahora] = useState(() => Date.now());
+  const [proximosLanzamientos, setProximosLanzamientos] = useState<ProductoTeaser[]>([]);
+  const [loadingTeasers, setLoadingTeasers] = useState(true);
 
   useEffect(() => {
     if (!perfil) return;
@@ -54,6 +71,38 @@ function PerfilContent() {
       events.forEach((e) => window.removeEventListener(e, reset));
     };
   }, [perfil, cerrarSesion]);
+
+  useEffect(() => {
+    const fetchProximosLanzamientos = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("productos")
+          .select("slug, nombre, linea, precio_cop, material, imagen, imagenes, imagenes_por_color, insignia, modo_acceso")
+          .eq("linea", "SINGULAR")
+          .eq("modo_acceso", "espera")
+          .eq("activo", true)
+          .order("nombre", { ascending: true });
+
+        if (error) {
+          console.error("Error fetching próximos lanzamientos:", error);
+          setProximosLanzamientos([]);
+        } else {
+          const productosConFormato = (data || []).map((p: ProductoTeaser) => ({
+            ...p,
+            precioFormato: p.precio_cop ? `$${Number(p.precio_cop).toLocaleString("es-CO")} COP` : "",
+          }));
+          setProximosLanzamientos(productosConFormato);
+        }
+      } catch (e) {
+        console.error(e);
+        setProximosLanzamientos([]);
+      } finally {
+        setLoadingTeasers(false);
+      }
+    };
+
+    fetchProximosLanzamientos();
+  }, []);
 
   const pedidoActivo = useMemo(() => {
     if (pedidos.length === 0) return null;
@@ -203,38 +252,44 @@ function PerfilContent() {
 
           <section className="profile-section profile-section--teaser">
             <h2 className="profile-section-title">Próximos Lanzamientos</h2>
-            <p className="profile-teaser-intro">
-              La Línea Singular en Oro Macizo 18K se abre por primera vez para los
-              miembros del Círculo. Cada pieza se numera y se entrega con
-              certificado de origen.
-            </p>
             <div className="teaser-grid">
-              {productosSingular.map((lanzamiento) => (
-                <article className="teaser-card" key={lanzamiento.slug}>
-                  <div className="teaser-media">
-                    <Image
-                      src={lanzamiento.imagen}
-                      alt={lanzamiento.nombre}
-                      fill
-                      unoptimized={lanzamiento.imagenSinOptimizar}
-                      sizes="(max-width: 768px) 100vw, 25vw"
-                      style={{ objectFit: "cover" }}
-                    />
-                    <span className="teaser-lock">Próximamente</span>
-                  </div>
-                  <div className="teaser-body">
-                    <h3 className="teaser-name">{lanzamiento.nombre}</h3>
-                    <p className="teaser-line">{lanzamiento.material}</p>
-                    <p className="teaser-note">{lanzamiento.insignia}</p>
-                    <Link
-                      className="teaser-link"
-                      href={`/producto/${lanzamiento.slug}`}
-                    >
-                      {perfil ? "Ver Producto" : "Solicitar Acceso"}
-                    </Link>
-                  </div>
-                </article>
-              ))}
+              {loadingTeasers ? (
+                <p className="profile-empty">Cargando lanzamientos…</p>
+              ) : proximosLanzamientos.length === 0 ? (
+                <p className="profile-empty">No hay lanzamientos programados en este momento.</p>
+              ) : (
+                proximosLanzamientos.map((lanzamiento) => {
+                  const primeraImagen = lanzamiento.imagen || (Array.isArray(lanzamiento.imagenes) && lanzamiento.imagenes.length > 0 ? lanzamiento.imagenes[0] : "");
+                  return (
+                    <article className="teaser-card" key={lanzamiento.slug}>
+                      <div className="teaser-media">
+                        {primeraImagen && (
+                          <Image
+                            src={primeraImagen}
+                            alt={lanzamiento.nombre}
+                            fill
+                            unoptimized={lanzamiento.imagenSinOptimizar}
+                            sizes="(max-width: 768px) 100vw, 25vw"
+                            style={{ objectFit: "cover" }}
+                          />
+                        )}
+                        <span className="teaser-lock">Próximamente</span>
+                      </div>
+                      <div className="teaser-body">
+                        <h3 className="teaser-name">{lanzamiento.nombre}</h3>
+                        <p className="teaser-line">{lanzamiento.material}</p>
+                        <p className="teaser-note">{lanzamiento.insignia}</p>
+                        <Link
+                          className="teaser-link"
+                          href={`/producto/${lanzamiento.slug}`}
+                        >
+                          {perfil ? "Ver Producto" : "Solicitar Acceso"}
+                        </Link>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
             </div>
           </section>
         </div>

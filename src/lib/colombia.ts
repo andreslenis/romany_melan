@@ -5,8 +5,16 @@ export interface Departamento {
 
 export const DEPARTAMENTOS: Departamento[] = [
   {
+    nombre: "Amazonas",
+    ciudades: ["Leticia", "Puerto Nariño"],
+  },
+  {
     nombre: "Antioquia",
     ciudades: ["Medellín", "Bello", "Itagüí", "Envigado", "Apartadó", "Rionegro"],
+  },
+  {
+    nombre: "Arauca",
+    ciudades: ["Arauca", "Arauquita", "Cravo Norte", "Fortul", "Puerto Rondón", "Saravena", "Tame"],
   },
   {
     nombre: "Atlántico",
@@ -18,7 +26,7 @@ export const DEPARTAMENTOS: Departamento[] = [
   },
   {
     nombre: "Bolívar",
-    ciudades: ["Cartagena", "Magangué", "Turbaco", "El Carmen de Bolívar", "Montería"],
+    ciudades: ["Cartagena", "Magangué", "Turbaco", "El Carmen de Bolívar", "Mompox"],
   },
   {
     nombre: "Boyacá",
@@ -29,12 +37,24 @@ export const DEPARTAMENTOS: Departamento[] = [
     ciudades: ["Manizales", "La Dorada", "Chinchiná", "Villamaría", "Riosucio"],
   },
   {
+    nombre: "Caquetá",
+    ciudades: ["Florencia", "Belén de los Andaquíes", "Cartagena del Chairá", "Curillo", "El Doncello", "El Paujil", "La Montañita", "Milan", "Morelia", "Puerto Rico", "San José del Fragua", "San Vicente del Caguán", "Solano", "Solita", "Valparaíso"],
+  },
+  {
+    nombre: "Casanare",
+    ciudades: ["Yopal", "Aguazul", "Chámeza", "Hato Corozal", "La Salina", "Maní", "Monterrey", "Nunchía", "Orocué", "Paz de Ariporo", "Pore", "Recetor", "Sabanalarga", "Sácama", "San Luis de Palenque", "Támara", "Tauramena", "Trinidad", "Villanueva"],
+  },
+  {
     nombre: "Cauca",
-    ciudades: ["Popayán", "Santander de Quilichao", "Puerto Tejada", "Cauca"],
+    ciudades: ["Popayán", "Santander de Quilichao", "Puerto Tejada", "Santander de Quilichao"],
   },
   {
     nombre: "Cesar",
     ciudades: ["Valledupar", "Aguachica", "Codazzi", "La Jagua de Ibirico"],
+  },
+  {
+    nombre: "Chocó",
+    ciudades: ["Quibdó", "Istmina", "Condoto", "Nóvita", "Tadó", "Medio Atrato", "Medio Baudó", "Baudó", "Bojayá", "Carmen del Darién", "Río Iró", "Río Quito", "Unión Panamericana"],
   },
   {
     nombre: "Córdoba",
@@ -85,12 +105,20 @@ export const DEPARTAMENTOS: Departamento[] = [
     ciudades: ["Cúcuta", "Ocaña", "Pamplona", "Villa del Rosario"],
   },
   {
+    nombre: "Putumayo",
+    ciudades: ["Mocoa", "Colón", "Orito", "Puerto Asís", "Puerto Caicedo", "Puerto Guzmán", "Puerto Leguízamo", "San Francisco", "San Miguel", "Santiago", "Sibundoy", "Villagarzón"],
+  },
+  {
     nombre: "Quindío",
     ciudades: ["Armenia", "Calarcá", "Montenegro", "Quimbaya", "Circasia"],
   },
   {
     nombre: "Risaralda",
-    ciudades: ["Pereira", "Dosquebradas", "Santa Rosa de Cabal", "Armenia", "Quibdó"],
+    ciudades: ["Pereira", "Dosquebradas", "Santa Rosa de Cabal", "Armenia", "La Virginia"],
+  },
+  {
+    nombre: "San Andrés y Providencia",
+    ciudades: ["San Andrés", "Providencia"],
   },
   {
     nombre: "Santander",
@@ -100,12 +128,12 @@ export const DEPARTAMENTOS: Departamento[] = [
       "Barrancabermeja",
       "Girón",
       "San Gil",
-      "Soca",
+      "Socorro",
     ],
   },
   {
     nombre: "Sucre",
-    ciudades: ["Sincelejo", "Corozal", "Tolú", "Sampués", "Magangué"],
+    ciudades: ["Sincelejo", "Corozal", "Tolú", "Sampués", "San Onofre"],
   },
   {
     nombre: "Tolima",

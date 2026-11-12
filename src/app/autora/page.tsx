@@ -20,16 +20,16 @@ export default function AutoraPage() {
           <div className="container author-hero-content">
             <div className="author-hero-media">
               <Image
-                src="/resources/isotipo.png"
-                alt="Romany Melan"
+                src="/resources/autora/melany_roman.jpg"
+                alt="Melany Roman, fundadora de Romany Melan"
                 fill
                 priority
-                sizes="(max-width: 768px) 70vw, 380px"
-                style={{ objectFit: "contain" }}
+                sizes="(max-width: 768px) 70vw, 400px"
+                style={{ objectFit: "cover" }}
               />
             </div>
             <div className="author-hero-text">
-              <h1 className="section-title">La Autora &amp; El Origen</h1>
+              <h1 className="section-title">La Autora & El Origen</h1>
               <p className="author-hero-subtitle">
                 Detrás de cada nudo hay una historia, una técnica y una marca
                 hecha a mano.
@@ -41,10 +41,13 @@ export default function AutoraPage() {
         <section className="author-section" id="sobre-la-autora">
           <div className="container author-grid">
             <div className="author-image">
-              <span>
-                Fotografía editorial<br />
-                de la creadora
-              </span>
+              <Image
+                src="/resources/autora/Perfil_autora.jpg"
+                alt="Fotografía editorial de Melany Roman"
+                fill
+                sizes="(max-width: 768px) 100vw, 500px"
+                style={{ objectFit: "cover" }}
+              />
             </div>
             <div className="author-content fade-in">
               <h2 className="section-title">Sobre Melany Roman</h2>
@@ -122,7 +125,7 @@ export default function AutoraPage() {
         <section className="author-section" id="la-marca">
           <div className="container author-grid">
             <div className="brand-content fade-in">
-                <h2 className="section-title" style={{ color: "var(--color-accent)" }}>Romany Melan</h2>
+              <h2 className="section-title" style={{ color: "var(--color-accent)" }}>Romany Melan</h2>
               <div className="brand-text">
                 <p>
                   Romany Melan celebra la belleza en su estado más puro y

@@ -22,6 +22,7 @@ export type ProductoSoberbia = {
   tallas?: unknown;
   colores_hilo?: unknown;
   activo?: boolean;
+  coleccion_id?: string;
 };
 
 export default function SoberbiaClient() {
@@ -51,14 +52,40 @@ export default function SoberbiaClient() {
   const [singularLocked, setSingularLocked] = useState(false);
   const [productos, setProductos] = useState<ProductoSoberbia[]>([]);
   const [loading, setLoading] = useState(true);
+  const [coleccionId, setColeccionId] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchColeccion = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("colecciones")
+          .select("id")
+          .eq("slug", "soberbia")
+          .maybeSingle();
+
+        if (error) {
+          console.error("Error fetching coleccion:", error);
+        } else if (data) {
+          setColeccionId(data.id);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    fetchColeccion();
+  }, []);
+
+  useEffect(() => {
+    if (!coleccionId) return;
+
     const fetchProductos = async () => {
       try {
         const { data, error } = await supabase
           .from("productos")
           .select("*")
           .eq("activo", true)
+          .eq("coleccion_id", coleccionId)
           .order("nombre", { ascending: true });
 
         if (error) {
@@ -76,7 +103,7 @@ export default function SoberbiaClient() {
     };
 
     fetchProductos();
-  }, []);
+  }, [coleccionId]);
 
   const productosLinea = productos.filter((p) => String(p.linea).toLowerCase() === linea);
 

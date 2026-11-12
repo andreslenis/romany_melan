@@ -7,20 +7,8 @@ import { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
 
-const ENLACES = [
+const ENLACES_DESKTOP = [
   { href: "/", label: "Inicio" },
-  {
-    label: "Colección 7 Pecados",
-    submenu: [
-      { href: "/coleccion/soberbia", label: "Soberbia" },
-      { href: "/#coleccion", label: "Ira (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Gula (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Envidia (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Lujuria (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Pereza (Próximamente)", disabled: true },
-      { href: "/#coleccion", label: "Avaricia (Próximamente)", disabled: true },
-    ],
-  },
   { href: "/autora", label: "La Autora" },
 ];
 
@@ -42,7 +30,6 @@ const ICON_USER_PLUS = (
 
 export default function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
-  const [submenuOpen, setSubmenuOpen] = useState(false);
   const { count, open, hydrated } = useCart();
   const { perfil } = usePerfil();
   const pathname = usePathname();
@@ -53,22 +40,32 @@ export default function SiteHeader() {
     const handleScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        submenuOpen &&
-        !document.querySelector(".nav-submenu-wrap")?.contains(target)
-      ) {
-        setSubmenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [submenuOpen]);
+  const renderDesktopLinks = () => (
+    <ul className="nav-links">
+      {ENLACES_DESKTOP.map((enlace) => (
+        <li key={enlace.label} className="nav-item">
+          <Link className="nav-link" href={enlace.href}>
+            {enlace.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+
+  const renderMobileLinks = () => (
+    <ul className="nav-links nav-links--mobile">
+      {ENLACES_DESKTOP.map((enlace) => (
+        <li key={enlace.label} className="nav-item">
+          <Link className="nav-link" href={enlace.href}>
+            {enlace.label}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <header className={`header ${scrolled ? "scrolled" : ""}`} id="header">
@@ -87,45 +84,12 @@ export default function SiteHeader() {
               </svg>
             </button>
           )}
-          <ul className="nav-links">
-            {ENLACES.map((enlace) => (
-              <li key={enlace.label} className={enlace.submenu ? "nav-item nav-item--has-submenu" : "nav-item"}>
-                {enlace.submenu ? (
-                  <div className="nav-submenu-wrap">
-                    <button
-                      className="nav-link nav-link--btn"
-                      aria-haspopup="true"
-                      aria-expanded={submenuOpen}
-                      onClick={() => setSubmenuOpen((prev) => !prev)}
-                    >
-                      {enlace.label}
-                    </button>
-                    <ul className={`nav-submenu ${submenuOpen ? "nav-submenu--open" : ""}`}>
-                      {enlace.submenu.map((sub) => (
-                        <li key={sub.label}>
-                          {sub.disabled ? (
-                            <span className="nav-submenu-item nav-submenu-item--disabled">{sub.label}</span>
-                          ) : (
-                            <Link
-                              className="nav-submenu-item"
-                              href={sub.href}
-                              onClick={() => setSubmenuOpen(false)}
-                            >
-                              {sub.label}
-                            </Link>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : (
-                  <Link className="nav-link" href={enlace.href}>
-                    {enlace.label}
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="nav-links-desktop">
+            {renderDesktopLinks()}
+          </div>
+          <div className="nav-links-mobile">
+            {renderMobileLinks()}
+          </div>
         </div>
         <div className="nav-right">
           {perfil ? (
@@ -158,7 +122,7 @@ export default function SiteHeader() {
             </>
           )}
           <button
-            className="icon-btn"
+            className="icon-btn cart-btn"
             onClick={open}
             aria-label="Abrir carrito de compras"
             title="Carrito"
