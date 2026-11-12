@@ -1078,6 +1078,11 @@ button {
   letter-spacing: 0.08em;
 }
 
+.pdp-block-title {
+  font-size: clamp(1.1rem, 2vw, 1.3rem);
+  font-weight: 600;
+}
+
 .pdp-title {
   font-size: clamp(2.5rem, 7vw, 3.75rem);
   font-weight: 500;

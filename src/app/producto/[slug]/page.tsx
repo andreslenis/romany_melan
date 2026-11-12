@@ -586,7 +586,9 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                       <p className="pdp-access-note">Obra invariable de edición limitada. Guardamos tu lugar en la fila y te escribemos en cuanto haya una unidad.</p>
                     </form>
                   )}
-                  <div className="pdp-share" style={{ marginTop: "1.5rem" }}>
+                </div>
+
+                <div className="pdp-share" style={{ marginTop: "1.5rem" }}>
                     <p className="pdp-share-note">Comparte este articulo con quien desees</p>
                     <button
                       type="button"
@@ -607,7 +609,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                       <span>{shareCopied ? "¡Copiado!" : "Copiar enlace"}</span>
                     </button>
                   </div>
-                </div>
 
               <div className="pdp-accordion">
                 <div className="pdp-accordion-item">
@@ -678,24 +679,24 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                     </div>
                   </details>
                 </div>
-              </div>
 
-              <details className="pdp-specs">
-                <summary>Especificaciones técnicas</summary>
-                <div className="pdp-specs-content">
-                  <ul>
-                    <li>
-                      <strong>Material:</strong> {producto.especificaciones?.material}
-                    </li>
-                    <li>
-                      <strong>Componentes metálicos:</strong> {producto.especificaciones?.componentes}
-                    </li>
-                    <li>
-                      <strong>Piedra:</strong> {producto.especificaciones?.piedra}
-                    </li>
-                  </ul>
-                </div>
-              </details>
+                <details className="pdp-specs">
+                  <summary>Especificaciones técnicas</summary>
+                  <div className="pdp-specs-content">
+                    <ul>
+                      <li>
+                        <strong>Material:</strong> {producto.especificaciones?.material}
+                      </li>
+                      <li>
+                        <strong>Componentes metálicos:</strong> {producto.especificaciones?.componentes}
+                      </li>
+                      <li>
+                        <strong>Piedra:</strong> {producto.especificaciones?.piedra}
+                      </li>
+                    </ul>
+                  </div>
+                </details>
+              </div>
 
               {null}
             </div>
