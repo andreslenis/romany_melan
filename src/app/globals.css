@@ -1070,6 +1070,14 @@ button {
   white-space: nowrap;
 }
 
+.pdp-share-note {
+  font-size: 0.8rem;
+  color: rgba(17, 17, 17, 0.55);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .pdp-title {
   font-size: clamp(2.5rem, 7vw, 3.75rem);
   font-weight: 500;
@@ -1649,7 +1657,7 @@ button {
 }
 
 .cart-subtotal-value {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 1.5rem;
   letter-spacing: 0;
   text-transform: none;
