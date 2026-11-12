@@ -233,7 +233,7 @@ function OrderSummary({
         <span>{formatCOP(total)}</span>
       </div>
       <p className="order-summary-note">
-        Envío seguro a toda Colombia | Incluye Empaque de Lujo y Certificado
+        Envío gratis a toda Colombia | Incluye Empaque y Certificado de piezas
       </p>
       {perfilEmail && (
         <p className="order-summary-note order-summary-note--miembro">
