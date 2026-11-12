@@ -235,6 +235,11 @@ function OrderSummary({
       <p className="order-summary-note">
         Envío gratis a toda Colombia | Incluye Empaque y Certificado de piezas
       </p>
+      <p className="order-summary-note">
+        Pieza de fabricación artesanal: tiempo de producción de 3 a 5 días
+        hábiles antes del envío. La guía de envío se comparte por el correo y
+        número de teléfono otorgado.
+      </p>
       {perfilEmail && (
         <p className="order-summary-note order-summary-note--miembro">
           Sesión del Círculo: {perfilEmail}

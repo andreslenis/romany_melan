@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense, useCallback } from "react";
+import { useEffect, useState, Suspense, useCallback, useRef } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
@@ -16,7 +16,7 @@ type TxState = {
 };
 
 const POLL_MS = 3000;
-const POLL_MAX = 8;
+const POLL_MAX = 40;
 
 function RespuestaContent() {
   const params = useSearchParams();
@@ -29,6 +29,8 @@ function RespuestaContent() {
     error: null,
   });
   const [cleared, setCleared] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const forceCheckRef = useRef<(() => Promise<void>) | null>(null);
 
   const fetchStatus = useCallback(async (id: string) => {
     const res = await fetch(`/api/wompi/transaction?id=${encodeURIComponent(id)}`, {
@@ -56,26 +58,61 @@ function RespuestaContent() {
     let attempts = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const run = async () => {
+    const checkOnce = async () => {
       try {
         const r = await fetchStatus(transactionId);
         if (cancelled) return;
         setState({ estadoPago: r.estadoPago, reference: r.reference, loading: false, error: null });
-        const pending = !r.estadoPago || r.estadoPago === "PENDIENTE" || r.pending;
-        if (pending && attempts < POLL_MAX) {
-          attempts += 1;
-          timer = setTimeout(run, POLL_MS);
-        }
+        return r;
       } catch {
         if (cancelled) return;
         setState((s) => ({ ...s, loading: false, error: "No pudimos consultar el estado del pago." }));
+        return null;
+      }
+    };
+
+    const run = async () => {
+      const r = await checkOnce();
+      if (!r || cancelled) return;
+      const pending = !r.estadoPago || r.estadoPago === "PENDIENTE" || r.pending;
+      if (pending && attempts < POLL_MAX) {
+        attempts += 1;
+        timer = setTimeout(run, POLL_MS);
+      }
+    };
+
+    const forceCheck = async () => {
+      setVerifying(true);
+      try {
+        const r = await checkOnce();
+        if (r && !cancelled) {
+          const pending = !r.estadoPago || r.estadoPago === "PENDIENTE" || r.pending;
+          if (pending && attempts < POLL_MAX) {
+            attempts += 1;
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(run, POLL_MS);
+          }
+        }
+      } finally {
+        setVerifying(false);
       }
     };
 
     run();
+
+    forceCheckRef.current = forceCheck;
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void forceCheck();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
     return () => {
       cancelled = true;
       if (timer) clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
   }, [transactionId, fetchStatus]);
 
@@ -122,6 +159,16 @@ function RespuestaContent() {
                     : `Transacción ${transactionId}`}
           </p>
           {state.error && <p className="checkout-empty-text">{state.error}</p>}
+          {(status !== "APROBADO") && (
+            <button
+              onClick={() => void forceCheckRef.current?.()}
+              disabled={verifying}
+              className="cta-btn"
+              style={{ marginTop: "1rem", marginRight: "0.5rem" }}
+            >
+              {verifying ? "Verificando…" : "Verificar estado del pago"}
+            </button>
+          )}
           <Link href="/coleccion/soberbia" className="cta-btn">
             Seguir explorando
           </Link>
