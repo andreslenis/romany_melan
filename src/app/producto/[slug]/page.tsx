@@ -459,6 +459,22 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                     </div>
                   </div>
                 )}
+                <details className="pdp-specs">
+                  <summary>Especificaciones técnicas</summary>
+                  <div className="pdp-specs-content">
+                    <ul>
+                      <li>
+                        <strong>Material:</strong> {producto.especificaciones?.material}
+                      </li>
+                      <li>
+                        <strong>Componentes metálicos:</strong> {producto.especificaciones?.componentes}
+                      </li>
+                      <li>
+                        <strong>Piedra:</strong> {producto.especificaciones?.piedra}
+                      </li>
+                    </ul>
+                  </div>
+                </details>
                 <p className="pdp-line">{producto.material}</p>
               </div>
 
@@ -680,22 +696,6 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                   </details>
                 </div>
 
-                <details className="pdp-specs">
-                  <summary>Especificaciones técnicas</summary>
-                  <div className="pdp-specs-content">
-                    <ul>
-                      <li>
-                        <strong>Material:</strong> {producto.especificaciones?.material}
-                      </li>
-                      <li>
-                        <strong>Componentes metálicos:</strong> {producto.especificaciones?.componentes}
-                      </li>
-                      <li>
-                        <strong>Piedra:</strong> {producto.especificaciones?.piedra}
-                      </li>
-                    </ul>
-                  </div>
-                </details>
               </div>
 
               {null}
