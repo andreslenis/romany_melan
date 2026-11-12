@@ -81,7 +81,7 @@ export default function Home() {
               </div>
               <h1 className="hero-title" style={{ color: "var(--color-accent)" }}>ROMANY MELAN</h1>
               <p className="hero-subtitle">
-                Historias tejidas para llevar en la piel.
+                Historias para llevar en la piel.
               </p>
             </div>
             <h3 className="section-subtitle">— EL ORIGEN Y LA MATERIA</h3>

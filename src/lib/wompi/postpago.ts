@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { mapWompiStatus } from "./server";
+import { sendOrderConfirmationEmail } from "@/lib/email/send-order-confirmation";
 
 type PedidoRow = {
   id: string;
@@ -186,6 +187,18 @@ export async function applyWompiTransactionToPedido(
     await upsertCrmCliente(supabase, row);
   } catch (e) {
     console.error("[wompi/postpago] upsertCrmCliente exception", e);
+  }
+
+  // Enviar correo de confirmación de pedido (best-effort, no bloquea el flujo).
+  try {
+    const email = normalizeEmail(row.cliente_email);
+    const nombre = row.cliente_nombre?.trim() || "Cliente";
+    const referencia = row.numero_pedido ?? "";
+    if (email) {
+      await sendOrderConfirmationEmail({ email, nombre, referencia });
+    }
+  } catch (e) {
+    console.error("[wompi/postpago] sendOrderConfirmationEmail exception", e);
   }
 
   return { ok: true, pedidoId: row.id, estadoPago, postPagoProcesado: true };
