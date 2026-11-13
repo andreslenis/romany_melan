@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function SiteFooter() {
   const [trustOpen, setTrustOpen] = useState(false);
@@ -45,11 +46,7 @@ export default function SiteFooter() {
             target="_blank"
             rel="noreferrer"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="3" width="18" height="18" rx="5" />
-              <circle cx="12" cy="12" r="4" />
-              <circle cx="17" cy="7" r="1" />
-            </svg>
+            <Image src="/resources/icons/instagram.png" alt="" width={24} height={24} className="social-icon" />
           </a>
           <a
             className="social-link social-link--whatsapp"
@@ -58,10 +55,7 @@ export default function SiteFooter() {
             target="_blank"
             rel="noreferrer"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M17.5 3.5A14 14 0 0 1 21 12c0 4.7-2.8 8.8-6.9 10.4-.5.2-1 .1-1.3-.3a12 12 0 0 1-22-13.7c.2-.5.7-1 1.2-1.3A14 14 0 0 1 17.5 3.5z" />
-              <path d="M12 9v4l2.5 2" />
-            </svg>
+            <Image src="/resources/icons/whatsapp.png" alt="" width={24} height={24} className="social-icon" />
           </a>
         </div>
       </div>
@@ -128,14 +122,14 @@ export default function SiteFooter() {
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                <Image src="/resources/icons/whatsapp.png" alt="" width={20} height={20} className="contact-icon" />
                 <div>
                   <p style={{ fontWeight: 600 }}>WhatsApp</p>
                   <a href="https://wa.me/573122608873" target="_blank" rel="noreferrer" style={{ color: "inherit" }}>+57 312 260 8873</a>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" strokeWidth="1.5" /><circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5" /><circle cx="17" cy="7" r="1" fill="currentColor" /></svg>
+                <Image src="/resources/icons/instagram.png" alt="" width={20} height={20} className="contact-icon" />
                 <div>
                   <p style={{ fontWeight: 600 }}>Instagram</p>
                   <a href="https://www.instagram.com/romanymelan?cplk=eGwzaGluNWg4amRs&utm_source=qr" target="_blank" rel="noreferrer" style={{ color: "inherit" }}>@romanymelan</a>

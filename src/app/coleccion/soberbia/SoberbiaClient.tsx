@@ -245,7 +245,7 @@ export default function SoberbiaClient() {
                           </h3>
                           <p className="product-card-badge">
                             {producto.linea === "origen"
-                              ? "Oro Laminado 18K & Amatista Natural"
+                              ? "Oro Laminado 18K & Gema de Selección Especial"
                               : "Oro Macizo 18K & Gema de Selección Especial"}
                           </p>
                           {linea === "origen" && producto.precio_cop && (
