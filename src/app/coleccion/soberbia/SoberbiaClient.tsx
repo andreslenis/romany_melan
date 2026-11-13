@@ -243,11 +243,6 @@ export default function SoberbiaClient() {
                           <h3 className="product-card-title">
                             {producto.nombre}
                           </h3>
-                          <p className="product-card-badge">
-                            {producto.linea === "origen"
-                              ? "Oro Laminado 18K & Gema de Selección Especial"
-                              : "Oro Macizo 18K & Gema de Selección Especial"}
-                          </p>
                           {linea === "origen" && producto.precio_cop && (
                             <p className="product-card-price">
                               ${producto.precio_cop.toLocaleString("es-CO")} COP

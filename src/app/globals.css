@@ -855,11 +855,6 @@ button {
   font-size: clamp(1.25rem, 3vw, 1.75rem);
 }
 
-.product-card-badge {
-  font-size: 0.8rem;
-  color: rgba(17, 17, 17, 0.6);
-}
-
 .product-card-price {
   font-weight: 500;
 }
