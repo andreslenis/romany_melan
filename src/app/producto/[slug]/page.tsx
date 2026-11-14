@@ -13,6 +13,7 @@ import { usePerfil } from "@/context/ProfileContext";
 import { supabase } from "@/lib/supabase/client";
 import { COLORES_HILO, colorPorId } from "@/lib/pecados";
 import { LINEAS_CORTAS, type Linea } from "@/lib/types";
+import { precioFinal, precioRegular, promoVigente } from "@/utils/precio";
 
 const SHARE_URL_BASE = typeof window !== "undefined" ? window.location.origin : "https://www.romanymelan.com";
 
@@ -23,6 +24,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
 
   type DBProd = {
     id: string; slug: string; nombre: string; linea: string; precio?: number; precio_cop?: number; precioFormato?: string;
+    precio_promo?: number | null; promo_activa?: boolean | null;
     material?: string; categoria?: string; badge?: string; narrativa?: string; descripcion_corta?: string; historia_narrativa?: string;
     especificaciones?: { material?: string; componentes?: string; piedra?: string };
     tallas?: (string | number)[];
@@ -269,22 +271,19 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   })();
 
   const imagenParaCarrito = (colorActivoValido && imgsPorColor[colorActivoValido]) || imagenPrincipalVar || allImages[0] || "";
-  const precioFormato = producto.precioFormato || (producto.precio_cop ? `$${Number(producto.precio_cop).toLocaleString("es-CO")} COP` : "");
+  const precioBase = Number(producto.precio_cop ?? 0);
+  const tienePromo = promoVigente({ precio: precioBase, precioPromo: producto.precio_promo, promoActiva: producto.promo_activa });
+  const precioCobrado = precioFinal({ precio: precioBase, precioPromo: producto.precio_promo, promoActiva: producto.promo_activa });
+  const precioFormato = producto.precioFormato || (precioCobrado ? `$${precioCobrado.toLocaleString("es-CO")} COP` : "");
+  const precioRegularFormato = `$${precioRegular({ precio: precioBase }).toLocaleString("es-CO")} COP`;
 
   const handleAddToCart = () => {
-    const prodAny = producto as unknown as Record<string, unknown>;
-    const precio = Number(
-      prodAny.precio ??
-        prodAny.precio_cop ??
-        prodAny.precioCop ??
-        0
-    );
-      addItem({
+    addItem({
       slug: producto.slug,
       nombre: producto.nombre,
       linea: LINEAS_CORTAS[lineaNormProducto as Linea],
       lineaId: lineaNormProducto as Linea,
-      precio: isNaN(precio) ? 0 : precio,
+      precio: precioCobrado,
       imagen: imagenParaCarrito,
       talla: selectedSize,
       colorHilo: esSingular ? null : colorActivoValido,
@@ -435,6 +434,9 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
               <div className="pdp-header">
                 <h1 className="pdp-title">{producto.nombre}</h1>
                 <p className="pdp-price">{precioFormato}</p>
+                {tienePromo && (
+                  <p className="pdp-price-old">{precioRegularFormato}</p>
+                )}
                 {descripcionCorta && (
                   <div className="pdp-accordion">
                     <div className="pdp-accordion-item">

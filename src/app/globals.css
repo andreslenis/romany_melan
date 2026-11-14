@@ -859,6 +859,18 @@ button {
   font-weight: 500;
 }
 
+.product-price-promo {
+  font-weight: 600;
+}
+
+.product-price-old {
+  margin-left: 0.4rem;
+  font-size: 0.85em;
+  font-weight: 400;
+  text-decoration: line-through;
+  color: rgba(17, 17, 17, 0.45);
+}
+
 .product-card-btn {
   align-self: flex-start;
   padding: 0.75rem 1.75rem;
@@ -989,6 +1001,46 @@ button {
   font-weight: 600;
   color: var(--color-text);
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.pdp-price-old {
+  margin-top: 0.25rem;
+  font-size: 0.85em;
+  font-weight: 400;
+  text-decoration: line-through;
+  color: rgba(17, 17, 17, 0.45);
+}
+
+.catalog-order-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.catalog-order-btn {
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(17, 17, 17, 0.15);
+  background-color: #ffffff;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.catalog-order-btn:hover {
+  border-color: var(--color-accent);
+}
+
+.catalog-order-btn.active {
+  background-color: var(--color-text);
+  border-color: var(--color-text);
+  color: #ffffff;
 }
 
 .pdp-share {
@@ -3194,6 +3246,31 @@ button {
   align-self: flex-start;
   background-color: var(--color-text);
   color: #ffffff;
+}
+
+/* Estados de envío: fondo claro, texto oscuro para mantener legibilidad. */
+.estado-envio--preparacion {
+  background-color: #fff1e0;
+  color: #7a4200;
+  border-color: #f0c48a;
+}
+
+.estado-envio--enviado {
+  background-color: #e3f0ff;
+  color: #0b3f7a;
+  border-color: #9cc3ee;
+}
+
+.estado-envio--entregado {
+  background-color: #e4f6e6;
+  color: #1c5a24;
+  border-color: #a5d8ad;
+}
+
+.estado-envio--cancelado {
+  background-color: #fde5e5;
+  color: #8a1c1c;
+  border-color: #eda0a0;
 }
 
 

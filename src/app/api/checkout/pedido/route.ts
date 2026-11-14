@@ -53,33 +53,57 @@ export async function POST(req: Request) {
   const cliente_nombre = String(datos.nombre || "").trim() || null;
   const cliente_email = String(datos.email || "").trim().toLowerCase() || null;
   const cliente_telefono = String(datos.telefono || "").trim() || null;
-  const ambiente = String(body.ambiente || "").trim() || null;
+const ambiente = String(body.ambiente || "").trim() || null;
 
-  // Upsert por numero_pedido para evitar duplicados si el cliente reintenta.
-  const { data, error } = await supabaseAdmin
+  // Evitar duplicados si el cliente reintenta, sin sobrescribir el estado del
+  // pedido que ya haya gestionado el admin (estado_envio, pago, postpago).
+  const { data: existing } = await supabaseAdmin
     .from("pedidos")
-    .upsert(
-      {
-        numero_pedido,
+    .select("id")
+    .eq("numero_pedido", numero_pedido)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabaseAdmin
+      .from("pedidos")
+      .update({
         cliente_nombre,
         cliente_email,
         cliente_telefono,
         direccion_envio: datos,
         items,
         total_cop,
-        wompi_transaction_id: null,
-        estado_pago: "PENDIENTE",
-        metodo_pago: "web_checkout",
-        ambiente,
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: "numero_pedido", ignoreDuplicates: false }
-    )
+      })
+      .eq("id", existing.id);
+    if (error) {
+      console.error("[checkout/pedido] update error", error.message, numero_pedido);
+      return NextResponse.json({ error: "db_error", detail: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, pedido: { id: existing.id, numero_pedido } }, { status: 200 });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("pedidos")
+    .insert({
+      numero_pedido,
+      cliente_nombre,
+      cliente_email,
+      cliente_telefono,
+      direccion_envio: datos,
+      items,
+      total_cop,
+      wompi_transaction_id: null,
+      estado_pago: "PENDIENTE",
+      metodo_pago: "web_checkout",
+      ambiente,
+      updated_at: new Date().toISOString(),
+    })
     .select("id, numero_pedido")
     .maybeSingle();
 
   if (error) {
-    console.error("[checkout/pedido] upsert error", error.message, numero_pedido);
+    console.error("[checkout/pedido] insert error", error.message, numero_pedido);
     return NextResponse.json({ error: "db_error", detail: error.message }, { status: 500 });
   }
 

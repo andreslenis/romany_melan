@@ -5,12 +5,25 @@ import AdminGuard from "@/components/admin/AdminGuard";
 import { supabase } from "@/lib/supabase/client";
 import Link from "next/link";
 
+type DireccionEnvio = {
+  nombre?: string;
+  email?: string;
+  telefono?: string;
+  direccion?: string;
+  barrio?: string;
+  ciudad?: string;
+  departamento?: string;
+  codigoPostal?: string;
+  notas?: string;
+};
+
 type Pedido = {
   id: string;
   numero_pedido?: string;
   cliente_nombre?: string;
   cliente_email?: string;
   cliente_telefono?: string;
+  direccion_envio?: DireccionEnvio | null;
   items?: unknown[];
   total_cop?: number;
   estado_pago?: string;
@@ -19,8 +32,20 @@ type Pedido = {
   estado_envio?: string;
   guia_rastreo?: string;
   transportadora?: string;
+  post_pago_procesado_at?: string | null;
   created_at?: string;
 };
+
+const CLASE_ESTADO: Record<string, string> = {
+  EN_PREPARACION: "estado-envio--preparacion",
+  ENVIADO: "estado-envio--enviado",
+  ENTREGADO: "estado-envio--entregado",
+  CANCELADO: "estado-envio--cancelado",
+};
+
+function estadoFallback(estado?: string): string {
+  return estado && CLASE_ESTADO[estado] ? estado : "EN_PREPARACION";
+}
 
 async function authHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
@@ -35,6 +60,7 @@ export default function AdminPedidos() {
   const [guia, setGuia] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -96,6 +122,33 @@ export default function AdminPedidos() {
     load();
   };
 
+  const eliminarPedido = async (p: Pedido) => {
+    const confirmar = window.confirm(
+      `¿Eliminar el pedido ${p.numero_pedido || p.id.slice(0, 8)}? Esta acción devuelve el stock y no se puede deshacer.`
+    );
+    if (!confirmar) return;
+
+    setError(null);
+    setEliminando(p.id);
+    try {
+      const headers = { "Content-Type": "application/json", ...(await authHeaders()) };
+      const res = await fetch("/api/admin/pedidos", {
+        method: "DELETE",
+        headers,
+        body: JSON.stringify({ id: p.id }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string; detail?: string };
+      if (!res.ok || !json.ok) {
+        setError(json.detail || json.error || "No se pudo eliminar el pedido.");
+        return;
+      }
+      if (selected?.id === p.id) setSelected(null);
+      await load();
+    } finally {
+      setEliminando(null);
+    }
+  };
+
   return (
     <AdminGuard>
       <main className="admin-productos">
@@ -146,15 +199,32 @@ export default function AdminPedidos() {
                     <td>{p.estado_pago || "PENDIENTE"}</td>
                     <td title={p.wompi_transaction_id || ""} style={{ fontSize: "0.85em" }}>{p.wompi_status || p.wompi_transaction_id?.slice(0, 10) || "—"}</td>
                     <td>
-                      <select value={p.estado_envio || "EN_PREPARACION"} onChange={(e) => actualizarEstado(p.id, e.target.value)} className="form-input">
+                      <select
+                        value={estadoFallback(p.estado_envio)}
+                        onChange={(e) => actualizarEstado(p.id, e.target.value)}
+                        className={`form-input ${CLASE_ESTADO[estadoFallback(p.estado_envio)]}`}
+                      >
                         <option value="EN_PREPARACION">En preparación</option>
                         <option value="ENVIADO">Enviado</option>
                         <option value="ENTREGADO">Entregado</option>
+                        <option value="CANCELADO">Cancelado</option>
                       </select>
                     </td>
                     <td style={{ textAlign: "right" }}>${(p.total_cop || 0).toLocaleString("es-CO")}</td>
-                    <td style={{ textAlign: "right" }}>
-                      <button onClick={() => { setSelected(p); setTransportadora(p.transportadora || ""); setGuia(p.guia_rastreo || ""); }} style={{ color: "var(--color-accent)" }}>Ver</button>
+                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                      <button
+                        onClick={() => { setSelected(p); setTransportadora(p.transportadora || ""); setGuia(p.guia_rastreo || ""); }}
+                        style={{ color: "var(--color-accent)" }}
+                      >
+                        Ver
+                      </button>
+                      <button
+                        onClick={() => eliminarPedido(p)}
+                        disabled={eliminando === p.id}
+                        style={{ color: "#b3261e", marginLeft: "0.75rem" }}
+                      >
+                        {eliminando === p.id ? "Eliminando…" : "Eliminar"}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -167,6 +237,16 @@ export default function AdminPedidos() {
               <div style={{ background: "#fff", borderRadius: "0.75rem", padding: "2rem", maxWidth: "640px", width: "90%", maxHeight: "80vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
                 <h2>Pedido {selected.numero_pedido || selected.id.slice(0, 8)}</h2>
                 <p style={{ color: "rgba(0,0,0,0.6)" }}>{selected.cliente_nombre} · {selected.cliente_email}</p>
+
+                <h3 style={{ marginTop: "1rem" }}>Dirección de envío</h3>
+                <DireccionEnvioView datos={selected.direccion_envio} />
+
+                {selected.estado_envio === "CANCELADO" && selected.estado_pago === "APROBADO" && (
+                  <p style={{ marginTop: "1rem", padding: "0.75rem", background: "#fde5e5", color: "#8a1c1c", borderRadius: "0.5rem" }}>
+                    Este pedido está cancelado pero el pago fue aprobado. Cancelar no revierte el pago ni el stock.
+                  </p>
+                )}
+
                 <h3 style={{ marginTop: "1rem" }}>Ficha de confección</h3>
                 <ul style={{ listStyle: "none", padding: 0 }}>
                   {(selected.items || []).map((it, idx) => (
@@ -207,5 +287,49 @@ export default function AdminPedidos() {
         </div>
       </main>
     </AdminGuard>
+  );
+}
+
+function DireccionEnvioView({ datos }: { datos?: DireccionEnvio | null }) {
+  if (!datos) {
+    return <p style={{ color: "rgba(0,0,0,0.5)" }}>Sin dirección registrada.</p>;
+  }
+
+  const lineas = [
+    { label: "Nombre", valor: datos.nombre },
+    { label: "Email", valor: datos.email },
+    { label: "Teléfono", valor: datos.telefono },
+    { label: "Dirección", valor: datos.direccion },
+    { label: "Barrio", valor: datos.barrio },
+    { label: "Ciudad", valor: datos.ciudad },
+    { label: "Departamento", valor: datos.departamento },
+    { label: "Código postal", valor: datos.codigoPostal },
+  ].filter((l) => l.valor && String(l.valor).trim().length > 0);
+
+  const hayDatos = lineas.length > 0 || Boolean(datos.notas && datos.notas.trim());
+
+  if (!hayDatos) {
+    return <p style={{ color: "rgba(0,0,0,0.5)" }}>Sin dirección registrada.</p>;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+      {lineas.length > 0 && (
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.35rem 1rem" }}>
+          {lineas.map((l) => (
+            <li key={l.label} style={{ fontSize: "0.9rem" }}>
+              <span style={{ color: "rgba(0,0,0,0.55)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em", display: "block" }}>{l.label}</span>
+              <span style={{ color: "var(--color-text)" }}>{l.valor}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {datos.notas && datos.notas.trim() && (
+        <div style={{ marginTop: "0.5rem", padding: "0.75rem 1rem", background: "rgba(17,17,17,0.03)", borderRadius: "0.5rem" }}>
+          <div style={{ color: "rgba(0,0,0,0.55)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>Observaciones</div>
+          <p style={{ margin: "0.25rem 0 0", whiteSpace: "pre-wrap", fontStyle: "italic" }}>&ldquo;{datos.notas}&rdquo;</p>
+        </div>
+      )}
+    </div>
   );
 }

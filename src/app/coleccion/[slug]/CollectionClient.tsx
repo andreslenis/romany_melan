@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { usePerfil } from "@/context/ProfileContext";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import ProductPrice from "@/components/product/ProductPrice";
 import { supabase } from "@/lib/supabase/client";
 
 type Producto = {
@@ -14,6 +15,8 @@ type Producto = {
   nombre: string;
   linea: string;
   precio_cop?: number;
+  precio_promo?: number | null;
+  promo_activa?: boolean | null;
   descripcion_corta?: string;
   imagenes?: string[];
   activo?: boolean;
@@ -33,6 +36,13 @@ type Coleccion = {
   activa?: boolean;
 };
 
+type OrdenCatalogo = "destacado" | "precio-desc" | "alfabetico";
+
+const BOTONES_ORDEN: { id: OrdenCatalogo; label: string }[] = [
+  { id: "precio-desc", label: "Precio: mayor a menor" },
+  { id: "alfabetico", label: "Orden alfabético" },
+];
+
 export default function CollectionClient({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { perfil, hydrated } = usePerfil();
@@ -41,6 +51,7 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
   const [linea, setLinea] = useState<"origen" | "singular">("origen");
   const [singularLocked, setSingularLocked] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [orden, setOrden] = useState<OrdenCatalogo>("destacado");
 
   useEffect(() => {
     const load = async () => {
@@ -73,7 +84,19 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
   }, [slug]);
 
   const norm = (l: string | number | boolean | null | undefined) => String(l).toLowerCase();
-  const productosLinea = productos.filter((p) => norm(p.linea) === linea);
+  const productosLinea = useMemo(() => {
+    const filtrados = productos.filter((p) => norm(p.linea) === linea);
+    if (orden === "precio-desc") {
+      return [...filtrados].sort((a, b) => {
+        const diff = Number(b.precio_cop ?? 0) - Number(a.precio_cop ?? 0);
+        return diff !== 0 ? diff : a.nombre.localeCompare(b.nombre, "es");
+      });
+    }
+    if (orden === "alfabetico") {
+      return [...filtrados].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+    }
+    return filtrados;
+  }, [productos, linea, orden]);
 
   const handleSelectSingular = () => {
     if (!hydrated || !perfil) {
@@ -169,6 +192,28 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
                 </span>
               </button>
             </div>
+            <div className="catalog-order-bar" role="group" aria-label="Ordenar productos">
+              {BOTONES_ORDEN.map((boton) => (
+                <button
+                  key={boton.id}
+                  type="button"
+                  className={`catalog-order-btn ${orden === boton.id ? "active" : ""}`}
+                  aria-pressed={orden === boton.id}
+                  onClick={() => setOrden(boton.id)}
+                >
+                  {boton.label}
+                </button>
+              ))}
+              {orden !== "destacado" && (
+                <button
+                  type="button"
+                  className="catalog-order-btn"
+                  onClick={() => setOrden("destacado")}
+                >
+                  Restablecer
+                </button>
+              )}
+            </div>
           </div>
         </section>
 
@@ -187,7 +232,15 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
                       </Link>
                       <div className="product-card-body">
                         <h3 className="product-card-title">{p.nombre}</h3>
-                        {p.precio_cop ? <p className="product-card-price">${Number(p.precio_cop).toLocaleString("es-CO")} COP</p> : null}
+                        {p.precio_cop ? (
+                          <p className="product-card-price">
+                            <ProductPrice
+                              precio={Number(p.precio_cop)}
+                              precioPromo={p.precio_promo}
+                              promoActiva={p.promo_activa}
+                            />
+                          </p>
+                        ) : null}
                         <Link className="product-card-btn" href={`/producto/${p.slug}`}>Conoce su Historia</Link>
                       </div>
                     </article>
