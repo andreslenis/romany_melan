@@ -14,6 +14,8 @@ type Producto = {
   linea?: string;
   modo_acceso?: string;
   precio_cop?: number;
+  precio_promo?: number | null;
+  promo_activa?: boolean | null;
   stock_disponible?: number;
   activo?: boolean;
   descripcion_corta?: string;
@@ -38,6 +40,8 @@ export default function AdminProductos() {
     linea: "origen",
     modoAcceso: "disponible",
     precio: 0,
+    promoActiva: false,
+    precioPromo: 0,
     stock: 0,
     historia: "",
     descripcion_corta: "",
@@ -84,6 +88,10 @@ export default function AdminProductos() {
 
   const guardar = async () => {
     try {
+      if (form.promoActiva && (!Number(form.precioPromo) || Number(form.precioPromo) <= 0 || Number(form.precioPromo) >= Number(form.precio))) {
+        alert("El precio de promoción debe ser mayor a 0 y menor al precio regular.");
+        return;
+      }
       const uploadedUrls: string[] = [];
        const totalAfter = form.imagenes.length + selectedFiles.length;
        if (totalAfter > 3) {
@@ -116,6 +124,8 @@ export default function AdminProductos() {
          linea: form.linea === "singular" ? "SINGULAR" : "ORIGEN",
          modo_acceso: form.modoAcceso,
         precio_cop: Number(form.precio) || 0,
+        promo_activa: form.promoActiva,
+        precio_promo: form.promoActiva ? Number(form.precioPromo) || null : null,
         stock_disponible: Number(form.stock) || 0,
         historia_narrativa: form.historia,
         descripcion_corta: form.descripcion_corta,
@@ -147,7 +157,7 @@ export default function AdminProductos() {
         }
         if (data && data[0]) setProductos((prev) => [data[0] as Producto, ...prev]);
       }
-      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", modoAcceso: "disponible", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
+      setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", modoAcceso: "disponible", precio: 0, promoActiva: false, precioPromo: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
       setSelectedFiles([]);
       setEditingId(null);
       load();
@@ -209,6 +219,8 @@ export default function AdminProductos() {
       linea: p.linea === "SINGULAR" ? "singular" : "origen",
       modoAcceso: p.modo_acceso || "disponible",
       precio: p.precio_cop || 0,
+      promoActiva: Boolean(p.promo_activa),
+      precioPromo: p.precio_promo ?? 0,
       stock: p.stock_disponible || 0,
       historia: p.historia_narrativa || "",
       descripcion_corta: p.descripcion_corta || "",
@@ -263,7 +275,7 @@ export default function AdminProductos() {
                   className="cta-btn admin-btn--new"
                   onClick={() => {
                     setEditingId(null);
-                    setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", modoAcceso: "disponible", precio: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
+                    setForm({ nombre: "", slug: "", coleccion: "Soberbia", linea: "origen", modoAcceso: "disponible", precio: 0, promoActiva: false, precioPromo: 0, stock: 0, historia: "", descripcion_corta: "", activo: true, imagenes: [], tipoHilo: "", componentes: "", tamanoGema: "", requiereTalla: false, tallas: "", coloresHilo: [], imagenesPorColor: {} });
                     setSelectedFiles([]);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
@@ -297,7 +309,16 @@ export default function AdminProductos() {
                       <div style={{ fontSize: "0.8rem", color: "rgba(0,0,0,0.5)" }}>{p.slug}</div>
                     </td>
                     <td>{p.linea === "SINGULAR" ? "Línea Singular" : "Línea Origen"}</td>
-                    <td style={{ textAlign: "right" }}>${(p.precio_cop || 0).toLocaleString("es-CO")} COP</td>
+                    <td style={{ textAlign: "right" }}>
+                    {p.promo_activa && Number(p.precio_promo) > 0 ? (
+                      <>
+                        <div style={{ fontWeight: 600 }}>${Number(p.precio_promo).toLocaleString("es-CO")}</div>
+                        <div style={{ textDecoration: "line-through", color: "rgba(0,0,0,0.45)", fontSize: "0.8em" }}>${(p.precio_cop || 0).toLocaleString("es-CO")}</div>
+                      </>
+                    ) : (
+                      `$${(p.precio_cop || 0).toLocaleString("es-CO")} COP`
+                    )}
+                  </td>
                     <td style={{ textAlign: "center" }}>{p.stock_disponible || 0}</td>
                     <td style={{ textAlign: "center" }}>{p.activo !== false ? "Sí" : "No"}</td>
                     <td style={{ textAlign: "right" }}>
@@ -346,6 +367,21 @@ export default function AdminProductos() {
               <div className="admin-form-field">
                 <label className="admin-form-label">Precio COP</label>
                 <input className="form-input" type="number" placeholder="Precio COP" value={form.precio} onChange={(e) => setForm({ ...form, precio: Number(e.target.value) })} />
+              </div>
+              <div className="admin-form-field admin-form-field--full">
+                <label className="admin-form-label checkbox-label" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <input type="checkbox" checked={form.promoActiva} onChange={(e) => setForm({ ...form, promoActiva: e.target.checked })} />
+                  <span>¿Tiene precio de promoción?</span>
+                </label>
+                {form.promoActiva && (
+                  <div className="admin-form-field" style={{ marginTop: "0.5rem", maxWidth: "240px" }}>
+                    <label className="admin-form-label">Precio de promoción COP</label>
+                    <input className="form-input" type="number" placeholder="Precio de promoción" value={form.precioPromo} onChange={(e) => setForm({ ...form, precioPromo: Number(e.target.value) })} />
+                    <p style={{ fontSize: "0.75rem", color: "rgba(0,0,0,0.5)", margin: "0.25rem 0 0" }}>
+                      Debe ser menor al precio regular. El cliente verá el precio tachado junto al de promoción.
+                    </p>
+                  </div>
+                )}
               </div>
               <div className="admin-form-field">
                 <label className="admin-form-label">Stock</label>

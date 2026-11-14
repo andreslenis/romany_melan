@@ -3,11 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePerfil } from "@/context/ProfileContext";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import ProductPrice from "@/components/product/ProductPrice";
 import { supabase } from "@/lib/supabase/client";
+import { precioFinal } from "@/utils/precio";
 
 export type ProductoSoberbia = {
   id: string;
@@ -15,6 +17,8 @@ export type ProductoSoberbia = {
   nombre: string;
   linea: "origen" | "singular";
   precio_cop?: number;
+  precio_promo?: number | null;
+  promo_activa?: boolean | null;
   descripcion_corta?: string;
   historia_narrativa?: string;
   imagenes?: string[];
@@ -24,6 +28,23 @@ export type ProductoSoberbia = {
   activo?: boolean;
   coleccion_id?: string;
 };
+
+type OrdenCatalogo = "destacado" | "precio-asc" | "precio-desc" | "alfabetico";
+
+const BOTONES_ORDEN: { id: OrdenCatalogo; label: string }[] = [
+  { id: "precio-asc", label: "Precio: menor a mayor" },
+  { id: "precio-desc", label: "Precio: mayor a menor" },
+  { id: "alfabetico", label: "Orden alfabético" },
+];
+
+/** Precio efectivo: promoción si está activa; si no, el precio regular. */
+function precioEfectivo(p: ProductoSoberbia): number {
+  return precioFinal({
+    precio: Number(p.precio_cop ?? 0),
+    precioPromo: p.precio_promo,
+    promoActiva: p.promo_activa,
+  });
+}
 
 export default function SoberbiaClient() {
   const { perfil, hydrated } = usePerfil();
@@ -53,6 +74,7 @@ export default function SoberbiaClient() {
   const [productos, setProductos] = useState<ProductoSoberbia[]>([]);
   const [loading, setLoading] = useState(true);
   const [coleccionId, setColeccionId] = useState<string | null>(null);
+  const [orden, setOrden] = useState<OrdenCatalogo>("destacado");
 
   useEffect(() => {
     const fetchColeccion = async () => {
@@ -105,7 +127,25 @@ export default function SoberbiaClient() {
     fetchProductos();
   }, [coleccionId]);
 
-  const productosLinea = productos.filter((p) => String(p.linea).toLowerCase() === linea);
+  const productosLinea = useMemo(() => {
+    const filtrados = productos.filter((p) => String(p.linea).toLowerCase() === linea);
+    if (orden === "precio-desc") {
+      return [...filtrados].sort((a, b) => {
+        const diff = precioEfectivo(b) - precioEfectivo(a);
+        return diff !== 0 ? diff : a.nombre.localeCompare(b.nombre, "es");
+      });
+    }
+    if (orden === "precio-asc") {
+      return [...filtrados].sort((a, b) => {
+        const diff = precioEfectivo(a) - precioEfectivo(b);
+        return diff !== 0 ? diff : a.nombre.localeCompare(b.nombre, "es");
+      });
+    }
+    if (orden === "alfabetico") {
+      return [...filtrados].sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+    }
+    return filtrados;
+  }, [productos, linea, orden]);
 
   const handleSelectSingular = () => {
     if (!hydrated || !perfil) {
@@ -196,6 +236,28 @@ export default function SoberbiaClient() {
                 </span>
               </button>
             </div>
+            <div className="catalog-order-bar" role="group" aria-label="Ordenar productos">
+              {BOTONES_ORDEN.map((boton) => (
+                <button
+                  key={boton.id}
+                  type="button"
+                  className={`catalog-order-btn ${orden === boton.id ? "active" : ""}`}
+                  aria-pressed={orden === boton.id}
+                  onClick={() => setOrden(boton.id)}
+                >
+                  {boton.label}
+                </button>
+              ))}
+              {orden !== "destacado" && (
+                <button
+                  type="button"
+                  className="catalog-order-btn"
+                  onClick={() => setOrden("destacado")}
+                >
+                  Restablecer
+                </button>
+              )}
+            </div>
           </div>
         </section>
 
@@ -245,7 +307,11 @@ export default function SoberbiaClient() {
                           </h3>
                           {linea === "origen" && producto.precio_cop && (
                             <p className="product-card-price">
-                              ${producto.precio_cop.toLocaleString("es-CO")} COP
+                              <ProductPrice
+                                precio={Number(producto.precio_cop)}
+                                precioPromo={producto.precio_promo}
+                                promoActiva={producto.promo_activa}
+                              />
                             </p>
                           )}
                         </div>

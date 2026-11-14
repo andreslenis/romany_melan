@@ -13,6 +13,7 @@ import { usePerfil } from "@/context/ProfileContext";
 import { supabase } from "@/lib/supabase/client";
 import { COLORES_HILO, colorPorId } from "@/lib/pecados";
 import { LINEAS_CORTAS, type Linea } from "@/lib/types";
+import { precioFinal, precioRegular, promoVigente } from "@/utils/precio";
 
 const SHARE_URL_BASE = typeof window !== "undefined" ? window.location.origin : "https://www.romanymelan.com";
 
@@ -23,6 +24,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
 
   type DBProd = {
     id: string; slug: string; nombre: string; linea: string; precio?: number; precio_cop?: number; precioFormato?: string;
+    precio_promo?: number | null; promo_activa?: boolean | null;
     material?: string; categoria?: string; badge?: string; narrativa?: string; descripcion_corta?: string; historia_narrativa?: string;
     especificaciones?: { material?: string; componentes?: string; piedra?: string };
     tallas?: (string | number)[];
@@ -95,7 +97,8 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
       }
       const prodLinea = String(prod.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
       setLineaActiva(prodLinea);
-      setSelectedSize(Array.isArray(prod.tallas) && prod.tallas.length ? String(prod.tallas[0]) : null);
+      // Sin preselección: el cliente debe elegir talla explícitamente.
+      setSelectedSize(null);
       if (prod.grupo) {
         const { data: vs } = await supabase.from("productos").select("*").eq("grupo", prod.grupo);
         setVariantes((vs || []) as DBProd[]);
@@ -171,6 +174,11 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   useEffect(() => {
     setCurrentImageIndex(0);
   }, [slugActivo, colorHilo]);
+
+  // Al cambiar de variante (color) las tallas pueden cambiar: reiniciar la selección.
+  useEffect(() => {
+    setSelectedSize(null);
+  }, [slugActivo]);
 
   useEffect(() => {
     if (!productoBase) return;
@@ -269,22 +277,23 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
   })();
 
   const imagenParaCarrito = (colorActivoValido && imgsPorColor[colorActivoValido]) || imagenPrincipalVar || allImages[0] || "";
-  const precioFormato = producto.precioFormato || (producto.precio_cop ? `$${Number(producto.precio_cop).toLocaleString("es-CO")} COP` : "");
+  const precioBase = Number(producto.precio_cop ?? 0);
+  const tienePromo = promoVigente({ precio: precioBase, precioPromo: producto.precio_promo, promoActiva: producto.promo_activa });
+  const precioCobrado = precioFinal({ precio: precioBase, precioPromo: producto.precio_promo, promoActiva: producto.promo_activa });
+  const precioFormato = producto.precioFormato || (precioCobrado ? `$${precioCobrado.toLocaleString("es-CO")} COP` : "");
+  const precioRegularFormato = `$${precioRegular({ precio: precioBase }).toLocaleString("es-CO")} COP`;
+
+  const requiereTalla = Array.isArray(producto.tallas) && producto.tallas.length > 0;
+  const puedeAgregar = !requiereTalla || Boolean(selectedSize);
 
   const handleAddToCart = () => {
-    const prodAny = producto as unknown as Record<string, unknown>;
-    const precio = Number(
-      prodAny.precio ??
-        prodAny.precio_cop ??
-        prodAny.precioCop ??
-        0
-    );
-      addItem({
+    if (!puedeAgregar) return;
+    addItem({
       slug: producto.slug,
       nombre: producto.nombre,
       linea: LINEAS_CORTAS[lineaNormProducto as Linea],
       lineaId: lineaNormProducto as Linea,
-      precio: isNaN(precio) ? 0 : precio,
+      precio: precioCobrado,
       imagen: imagenParaCarrito,
       talla: selectedSize,
       colorHilo: esSingular ? null : colorActivoValido,
@@ -435,6 +444,9 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
               <div className="pdp-header">
                 <h1 className="pdp-title">{producto.nombre}</h1>
                 <p className="pdp-price">{precioFormato}</p>
+                {tienePromo && (
+                  <p className="pdp-price-old">{precioRegularFormato}</p>
+                )}
                 {descripcionCorta && (
                   <div className="pdp-accordion">
                     <div className="pdp-accordion-item">
@@ -540,7 +552,7 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                       value={selectedSize || ""}
                       onChange={(e) => setSelectedSize(e.target.value || null)}
                     >
-                      <option value="">Seleccionar talla</option>
+                      <option value="">Seleccione talla</option>
                       {producto.tallas.map((t: string | number) => (
                         <option key={String(t)} value={String(t)}>
                           {t}
@@ -565,9 +577,14 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
 
                 <div className="pdp-actions">
                   {producto.modoAcceso === "disponible" ? (
-                    <button className="pdp-add-btn" onClick={handleAddToCart}>
-                      Tejer esta Historia en mi Piel
-                    </button>
+                    <>
+                      <button className="pdp-add-btn" onClick={handleAddToCart} disabled={!puedeAgregar}>
+                        Tejer esta Historia en mi Piel
+                      </button>
+                      {requiereTalla && !selectedSize && (
+                        <p className="pdp-size-hint">Selecciona una talla para continuar.</p>
+                      )}
+                    </>
                   ) : producto.modoAcceso === "circulo" ? (
                     <>
                       <Link className="pdp-add-btn pdp-add-btn--outline" href="/mi-perfil">
@@ -576,9 +593,14 @@ export default function ProductoPDP({ params }: { params: Promise<{ slug: string
                       <p className="pdp-access-note">Esta obra no está en stock abierto. Crea tu perfil en el Círculo para solicitar el acceso y ser notificado cuando haya una edición disponible.</p>
                     </>
                   ) : !esSingular ? (
-                    <button className="pdp-add-btn" onClick={handleAddToCart}>
-                      Tejer esta Historia en mi Piel
-                    </button>
+                    <>
+                      <button className="pdp-add-btn" onClick={handleAddToCart} disabled={!puedeAgregar}>
+                        Tejer esta Historia en mi Piel
+                      </button>
+                      {requiereTalla && !selectedSize && (
+                        <p className="pdp-size-hint">Selecciona una talla para continuar.</p>
+                      )}
+                    </>
                   ) : esperaRegistrada ? (
                     <p className="pdp-waitlist-done">
                       Te anotamos en la lista de espera de <strong>{producto.nombre}</strong>. Te avisaremos por correo cuando abramos la próxima edición.

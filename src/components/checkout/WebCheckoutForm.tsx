@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   WOMPI_CHECKOUT_URL,
@@ -33,53 +33,35 @@ interface Props {
   };
 }
 
+type RespuestaPedido = {
+  ok?: boolean;
+  total?: number;
+  amountInCents?: number;
+  signature?: string;
+  error?: string;
+  detail?: string;
+};
+
 export default function WebCheckoutForm({ total, referencia, items, datos }: Props) {
-  const [signature, setSignature] = useState<string | null>(null);
-  const [loading, setLoading] = useState(wompiIsConfigured);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    if (!wompiIsConfigured) {
-      setError(true);
-      setLoading(false);
-      return;
-    }
-
-    (async () => {
-      try {
-        const res = await fetch("/api/wompi/integrity", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            reference: referencia,
-            amountInCents: Math.round(total * 100),
-            currency: "COP",
-          }),
-        });
-        const data = await res.json();
-        if (data.signature) {
-          setSignature(data.signature);
-        } else {
-          setError(true);
-        }
-      } catch {
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [referencia, total]);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (!signature) return;
+      if (enviando) return;
 
-      const amountInCents = Math.round(total * 100);
-      setLoading(true);
-      setError(false);
+      if (!wompiIsConfigured) {
+        setError("No se pudo preparar el pago. Verifica la configuración de Wompi.");
+        return;
+      }
+
+      setEnviando(true);
+      setError(null);
 
       try {
+        // El servidor recalcula el total desde la base de datos, guarda el pedido
+        // y devuelve el monto y la firma de integridad que se envían a Wompi.
         const res = await fetch("/api/checkout/pedido", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -87,83 +69,94 @@ export default function WebCheckoutForm({ total, referencia, items, datos }: Pro
             numero_pedido: referencia,
             items,
             datos,
-            total_cop: total,
             ambiente: WOMPI_ENVIRONMENT,
           }),
         });
-        if (!res.ok) {
-          const errData = (await res.json().catch(() => ({}))) as { error?: string };
-          throw new Error(errData.error || "pedido_create_failed");
+
+        const json = (await res.json().catch(() => ({}))) as RespuestaPedido;
+
+        if (!res.ok || !json.ok) {
+          if (json.error === "producto_no_disponible") {
+            throw new Error(
+              "Una de las piezas ya no está disponible. Revisa tu carrito antes de pagar."
+            );
+          }
+          throw new Error(json.detail || json.error || "pedido_create_failed");
         }
+
+        const amountInCents = Number(json.amountInCents);
+        const signature = String(json.signature || "");
+
+        if (!Number.isFinite(amountInCents) || amountInCents <= 0 || !signature) {
+          throw new Error("No se pudo firmar el pago. Inténtalo de nuevo.");
+        }
+
+        const params = new URLSearchParams();
+        params.set("public-key", WOMPI_PUBLIC_KEY);
+        params.set("currency", "COP");
+        params.set("amount-in-cents", String(amountInCents));
+        params.set("reference", referencia);
+        params.set("signature:integrity", signature);
+        if (WOMPI_REDIRECT_URL) {
+          params.set("redirect-url", WOMPI_REDIRECT_URL);
+        }
+
+        const checkoutUrl = `${WOMPI_CHECKOUT_URL}?${params.toString()}`;
+        window.location.href = checkoutUrl;
       } catch (err) {
-        console.error("[checkout] no se pudo registrar el pedido", err);
-        setError(true);
-        setLoading(false);
-        return;
+        console.error("[checkout] no se pudo preparar el pago", err);
+        setError(
+          err instanceof Error && err.message
+            ? err.message
+            : "No se pudo preparar el pago. Inténtalo de nuevo."
+        );
+        setEnviando(false);
       }
-
-      const params = new URLSearchParams();
-      params.set("public-key", WOMPI_PUBLIC_KEY);
-      params.set("currency", "COP");
-      params.set("amount-in-cents", String(amountInCents));
-      params.set("reference", referencia);
-      params.set("signature:integrity", signature);
-      if (WOMPI_REDIRECT_URL) {
-        params.set("redirect-url", WOMPI_REDIRECT_URL);
-      }
-
-      const checkoutUrl = `${WOMPI_CHECKOUT_URL}?${params.toString()}`;
-      console.log("[wompi/checkout] redirectUrl:", checkoutUrl);
-      window.location.href = checkoutUrl;
     },
-    [referencia, total, signature, items, datos]
+    [referencia, items, datos, enviando]
   );
 
-  if (error) {
-    return (
-      <div className="payment-fallback">
-        <h3 className="checkout-block-title">Pagar con Wompi</h3>
-        <p className="payment-status">
-          No se pudo preparar el pago. Inténtalo de nuevo o verifica la
-          configuración.
-        </p>
-      </div>
-    );
-  }
-
-  if (loading || !signature) {
-    return (
-      <div className="payment-fallback">
-        <h3 className="checkout-block-title">Pagar con Wompi</h3>
-        <p className="payment-status">Cargando configuración de pago…</p>
-      </div>
-    );
-  }
-
-  const amountInCents = Math.round(total * 100);
+  const bloqueado = !wompiIsConfigured || Boolean(error);
 
   return (
-    <form action={WOMPI_CHECKOUT_URL} method="GET" onSubmit={handleSubmit}>
-      <input type="hidden" name="public-key" value={WOMPI_PUBLIC_KEY} />
-      <input type="hidden" name="currency" value="COP" />
-      <input type="hidden" name="amount-in-cents" value={String(amountInCents)} />
-      <input type="hidden" name="reference" value={referencia} />
-      <input type="hidden" name="signature:integrity" value={signature} />
-      {WOMPI_REDIRECT_URL && (
-        <input type="hidden" name="redirect-url" value={WOMPI_REDIRECT_URL} />
-      )}
-      <div className="payment-widget-wrap">
-        <h3 className="checkout-block-title">Pagar con Wompi</h3>
-        <p className="payment-amount">
-          Total a pagar <strong>${total.toLocaleString("es-CO", {
+    <div className="payment-widget-wrap">
+      <h3 className="checkout-block-title">Pagar con Wompi</h3>
+      <p className="payment-amount">
+        Total a pagar{" "}
+        <strong>
+          $
+          {total.toLocaleString("es-CO", {
             style: "currency",
             currency: "COP",
-          })}</strong>
-        </p>
-        <button type="submit" className="pdp-add-btn">
-          Pagar con Wompi
+            maximumFractionDigits: 0,
+          })}
+        </strong>
+      </p>
+
+      {bloqueado ? (
+        <div className="payment-fallback">
+          <p className="payment-status">
+            {error || "No se pudo preparar el pago. Inténtalo de nuevo o verifica la configuración."}
+          </p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <button type="submit" className="pdp-add-btn" disabled={enviando}>
+            {enviando ? "Procesando…" : "Pagar con Wompi"}
+          </button>
+        </form>
+      )}
+
+      {error && wompiIsConfigured && (
+        <button
+          type="button"
+          className="pdp-add-btn pdp-add-btn--outline"
+          style={{ marginTop: "0.75rem" }}
+          onClick={() => setError(null)}
+        >
+          Reintentar
         </button>
-      </div>
-    </form>
+      )}
+    </div>
   );
 }

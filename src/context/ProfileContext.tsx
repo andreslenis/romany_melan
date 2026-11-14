@@ -53,6 +53,7 @@ interface ProfileContextValue {
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
   crearPedido: (datos: CrearPedidoInput) => Pedido;
   solicitarEspera: (datos: {
     slug: string;
@@ -193,28 +194,32 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     try {
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-        },
-      });
-    } catch (e) {
-      console.error(e);
+      await supabase.auth.signOut();
+    } catch {
+      // sin sesión previa: no-op
     }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
+      },
+    });
+    if (error) throw error;
   }, []);
 
   const signInWithApple = useCallback(async () => {
     try {
-      await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
-        },
-      });
-    } catch (e) {
-      console.error(e);
+      await supabase.auth.signOut();
+    } catch {
+      // sin sesión previa: no-op
     }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
+      },
+    });
+    if (error) throw error;
   }, []);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
@@ -280,6 +285,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     removeStorage(PERFIL_KEY);
   }, []);
 
+  /** Cierra la sesión Supabase sin limpiar el perfil local (usado antes de un cambio de proveedor OAuth). */
+  const signOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const value = useMemo<ProfileContextValue>(
     () => ({
       perfil,
@@ -291,6 +305,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       signInWithGoogle,
       signInWithApple,
       signInWithEmail,
+      signOut,
       crearPedido,
       solicitarEspera,
       cerrarSesion,
@@ -304,6 +319,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       signInWithGoogle,
       signInWithApple,
       signInWithEmail,
+      signOut,
       crearPedido,
       solicitarEspera,
       cerrarSesion,

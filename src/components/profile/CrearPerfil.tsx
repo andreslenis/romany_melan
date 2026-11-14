@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { usePerfil } from "@/context/ProfileContext";
-import type { Perfil } from "@/lib/types";
+import { APPLE_LOGIN_ENABLED, GOOGLE_LOGIN_ENABLED } from "@/lib/auth-config";
 
 type Proveedor = "google" | "apple";
 
@@ -51,11 +51,17 @@ const PROVEEDORES: {
   },
 ];
 
+const PROVEEDORES_VISIBLES = PROVEEDORES.filter(
+  (opcion) =>
+    (opcion.id === "google" && GOOGLE_LOGIN_ENABLED) ||
+    (opcion.id === "apple" && APPLE_LOGIN_ENABLED)
+);
+
 export default function CrearPerfil({ compacto = false }: { compacto?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { registrar, perfil, signInWithGoogle, signInWithApple } = usePerfil();
-  const [proveedor, setProveedor] = useState<Proveedor | null>(null);
+  const [authLoading, setAuthLoading] = useState<Proveedor | null>(null);
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
@@ -72,15 +78,22 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
   }, [perfil, router, returnTo]);
 
   const handleProveedor = async (id: Proveedor) => {
-    setProveedor(id);
     setError(null);
-    if (id === "google" && signInWithGoogle) {
-      await signInWithGoogle();
-      return;
-    }
-    if (id === "apple" && signInWithApple) {
-      await signInWithApple();
-      return;
+    setAuthLoading(id);
+    try {
+      if (id === "google") {
+        await signInWithGoogle();
+      } else {
+        await signInWithApple();
+      }
+    } catch {
+      setError(
+        id === "google"
+          ? "No se pudo conectar con Google. Inténtalo de nuevo."
+          : "No se pudo conectar con Apple. Inténtalo de nuevo."
+      );
+    } finally {
+      setAuthLoading(null);
     }
   };
 
@@ -104,7 +117,7 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
         email: email.trim(),
         telefono: telefono.trim(),
         miembro,
-        proveedor: (proveedor ?? "manual") as Perfil["proveedor"],
+        proveedor: "manual",
         password,
       });
       router.push(returnTo);
@@ -118,28 +131,19 @@ export default function CrearPerfil({ compacto = false }: { compacto?: boolean }
   return (
     <div className={`crear-perfil ${compacto ? "crear-perfil--compacto" : ""}`}>
       <div className="auth-buttons">
-        {PROVEEDORES.map((opcion) => (
+        {PROVEEDORES_VISIBLES.map((opcion) => (
           <button
             key={opcion.id}
             type="button"
-            className={`${opcion.className} ${
-              proveedor === opcion.id ? "active" : ""
-            }`}
+            className={opcion.className}
+            disabled={authLoading !== null}
             onClick={() => handleProveedor(opcion.id)}
           >
             {opcion.icono}
-            <span>{opcion.nombre}</span>
+            <span>{authLoading === opcion.id ? "Conectando…" : opcion.nombre}</span>
           </button>
         ))}
       </div>
-
-      {proveedor && (
-        <p className="auth-pending">
-          La conexión con{" "}
-          {proveedor === "google" ? "Google" : "Apple"} se habilita en la
-          siguiente fase. Deja tu correo y te avisamos apenas esté activa.
-        </p>
-      )}
 
       <div className="auth-divider">
         <span>o crea tu perfil con tu correo</span>
