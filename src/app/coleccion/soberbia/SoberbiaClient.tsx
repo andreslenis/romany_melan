@@ -9,6 +9,7 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import ProductPrice from "@/components/product/ProductPrice";
 import { supabase } from "@/lib/supabase/client";
+import { precioFinal } from "@/utils/precio";
 
 export type ProductoSoberbia = {
   id: string;
@@ -28,12 +29,22 @@ export type ProductoSoberbia = {
   coleccion_id?: string;
 };
 
-type OrdenCatalogo = "destacado" | "precio-desc" | "alfabetico";
+type OrdenCatalogo = "destacado" | "precio-asc" | "precio-desc" | "alfabetico";
 
 const BOTONES_ORDEN: { id: OrdenCatalogo; label: string }[] = [
+  { id: "precio-asc", label: "Precio: menor a mayor" },
   { id: "precio-desc", label: "Precio: mayor a menor" },
   { id: "alfabetico", label: "Orden alfabético" },
 ];
+
+/** Precio efectivo: promoción si está activa; si no, el precio regular. */
+function precioEfectivo(p: ProductoSoberbia): number {
+  return precioFinal({
+    precio: Number(p.precio_cop ?? 0),
+    precioPromo: p.precio_promo,
+    promoActiva: p.promo_activa,
+  });
+}
 
 export default function SoberbiaClient() {
   const { perfil, hydrated } = usePerfil();
@@ -120,7 +131,13 @@ export default function SoberbiaClient() {
     const filtrados = productos.filter((p) => String(p.linea).toLowerCase() === linea);
     if (orden === "precio-desc") {
       return [...filtrados].sort((a, b) => {
-        const diff = Number(b.precio_cop ?? 0) - Number(a.precio_cop ?? 0);
+        const diff = precioEfectivo(b) - precioEfectivo(a);
+        return diff !== 0 ? diff : a.nombre.localeCompare(b.nombre, "es");
+      });
+    }
+    if (orden === "precio-asc") {
+      return [...filtrados].sort((a, b) => {
+        const diff = precioEfectivo(a) - precioEfectivo(b);
         return diff !== 0 ? diff : a.nombre.localeCompare(b.nombre, "es");
       });
     }

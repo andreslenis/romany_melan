@@ -9,12 +9,24 @@ import { colorPorId } from "@/lib/pecados";
 import { formatCOP } from "@/utils/format";
 
 export default function CartDrawer() {
-  const { items, count, subtotal, isOpen, close, updateQuantity, removeItem } =
-    useCart();
+  const {
+    items,
+    count,
+    subtotal,
+    isOpen,
+    close,
+    updateQuantity,
+    removeItem,
+    cambiosPrecio,
+    descartarCambiosPrecio,
+    syncPrices,
+  } = useCart();
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    void syncPrices();
 
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
@@ -29,7 +41,7 @@ export default function CartDrawer() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKey);
     };
-  }, [isOpen, close]);
+  }, [isOpen, close, syncPrices]);
 
   return (
     <div className={`cart-drawer-root ${isOpen ? "is-open" : ""}`}>
@@ -67,6 +79,26 @@ export default function CartDrawer() {
         </header>
 
         <div className="cart-drawer-body">
+          {cambiosPrecio.length > 0 && (
+            <div className="cart-price-notice" role="status">
+              <p className="cart-price-notice-title">Precio actualizado</p>
+              <ul>
+                {cambiosPrecio.map((cambio) => (
+                  <li key={cambio.slug}>
+                    {cambio.nombre}: <s>{formatCOP(cambio.antes)}</s> →{" "}
+                    <strong>{formatCOP(cambio.ahora)}</strong>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                className="cart-price-notice-close"
+                onClick={descartarCambiosPrecio}
+              >
+                Entendido
+              </button>
+            </div>
+          )}
           {items.length === 0 ? (
             <div className="cart-empty">
               <p className="cart-empty-text">

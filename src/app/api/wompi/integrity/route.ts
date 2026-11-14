@@ -1,23 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+
+import { firmarIntegridad } from "@/lib/wompi/integrity";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const { reference, amountInCents, currency } = body;
-  const secret = process.env.WOMPI_INTEGRITY_SECRET || "";
+
   const missing = [];
   if (!reference) missing.push("reference");
   if (!amountInCents) missing.push("amountInCents");
   if (!currency) missing.push("currency");
-  if (!secret) missing.push("secret");
+  if (!process.env.WOMPI_INTEGRITY_SECRET) missing.push("secret");
   if (missing.length) {
     return NextResponse.json({ error: "Missing params", missing }, { status: 400 });
   }
 
-  // Diagnóstico: loguear (sin exponer el secreto) qué se está firmando
-  console.log("[wompi/integrity] reference:", reference, "amountInCents:", amountInCents, "currency:", currency, "secretConfigured:", !!secret);
+  const signature = firmarIntegridad({
+    reference: String(reference),
+    amountInCents: Number(amountInCents),
+    currency: String(currency),
+  });
 
-  const cadena = `${reference}${amountInCents}${currency}${secret}`;
-  const hash = crypto.createHash("sha256").update(cadena).digest("hex");
-  return NextResponse.json({ signature: hash });
+  if (!signature) {
+    return NextResponse.json({ error: "Missing params", missing: ["secret"] }, { status: 400 });
+  }
+
+  return NextResponse.json({ signature });
 }

@@ -43,6 +43,36 @@ const CLASE_ESTADO: Record<string, string> = {
   CANCELADO: "estado-envio--cancelado",
 };
 
+const ETIQUETA: React.CSSProperties = {
+  color: "rgba(0,0,0,0.55)",
+  fontSize: "0.75rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.08em",
+};
+
+function texto(valor: unknown): string {
+  return String(valor ?? "").trim();
+}
+
+function bloqueNota(titulo: string, valor: unknown) {
+  const contenido = texto(valor);
+  return (
+    <div style={{ marginTop: "0.35rem" }}>
+      <span style={ETIQUETA}>{titulo}</span>
+      <p
+        style={{
+          margin: "0.15rem 0 0",
+          whiteSpace: "pre-wrap",
+          fontStyle: contenido ? "italic" : "normal",
+          color: contenido ? "inherit" : "rgba(0,0,0,0.45)",
+        }}
+      >
+        {contenido ? `“${contenido}”` : "Sin observaciones"}
+      </p>
+    </div>
+  );
+}
+
 function estadoFallback(estado?: string): string {
   return estado && CLASE_ESTADO[estado] ? estado : "EN_PREPARACION";
 }
@@ -239,7 +269,10 @@ export default function AdminPedidos() {
                 <p style={{ color: "rgba(0,0,0,0.6)" }}>{selected.cliente_nombre} · {selected.cliente_email}</p>
 
                 <h3 style={{ marginTop: "1rem" }}>Dirección de envío</h3>
-                <DireccionEnvioView datos={selected.direccion_envio} />
+                <DireccionEnvioView datos={selected.direccion_envio} mostrarNotas={false} />
+
+                <h3 style={{ marginTop: "1rem" }}>Observaciones del checkout</h3>
+                {bloqueNota("Notas del cliente", selected.direccion_envio?.notas)}
 
                 {selected.estado_envio === "CANCELADO" && selected.estado_pago === "APROBADO" && (
                   <p style={{ marginTop: "1rem", padding: "0.75rem", background: "#fde5e5", color: "#8a1c1c", borderRadius: "0.5rem" }}>
@@ -249,15 +282,27 @@ export default function AdminPedidos() {
 
                 <h3 style={{ marginTop: "1rem" }}>Ficha de confección</h3>
                 <ul style={{ listStyle: "none", padding: 0 }}>
-                  {(selected.items || []).map((it, idx) => (
-                    <li key={idx} style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", padding: "0.75rem 0" }}>
-                      <div style={{ fontWeight: 600 }}>{String((it as Record<string, unknown>).nombre)}</div>
-                      <div>Línea: {String((it as Record<string, unknown>).linea)}</div>
-                      <div style={{ fontWeight: 700 }}>Color de hilo: {String((it as Record<string, unknown>).colorHilo || (it as Record<string, unknown>).colorHiloHex || "-")}</div>
-                      <div>Talla: {String((it as Record<string, unknown>).talla || "-")}</div>
-                      {((it as Record<string, unknown>).observaciones ? <div>Nota: {String((it as Record<string, unknown>).observaciones)}</div> : null)}
-                    </li>
-                  ))}
+                  {(selected.items || []).map((it, idx) => {
+                    const item = it as Record<string, unknown>;
+                    const cantidad = Number(item.cantidad) || 0;
+                    const precio = Number(item.precio) || 0;
+                    return (
+                      <li key={idx} style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", padding: "0.75rem 0" }}>
+                        <div style={{ fontWeight: 600 }}>{String(item.nombre ?? "")}</div>
+                        <div>Línea: {String(item.linea ?? "-")}</div>
+                        <div style={{ fontWeight: 700 }}>
+                          Color de hilo: {String(item.colorHilo || item.colorHiloHex || "-")}
+                        </div>
+                        <div>Talla: {String(item.talla || "-")}</div>
+                        <div>Cantidad: {cantidad}</div>
+                        <div>
+                          Precio unitario: ${precio.toLocaleString("es-CO")} · Subtotal: $
+                          {(precio * cantidad).toLocaleString("es-CO")}
+                        </div>
+                        {bloqueNota("Observaciones de la pieza", item.observaciones)}
+                      </li>
+                    );
+                  })}
                 </ul>
                 <h3 style={{ marginTop: "1rem" }}>Despacho</h3>
                 <label style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
@@ -290,7 +335,13 @@ export default function AdminPedidos() {
   );
 }
 
-function DireccionEnvioView({ datos }: { datos?: DireccionEnvio | null }) {
+function DireccionEnvioView({
+  datos,
+  mostrarNotas = true,
+}: {
+  datos?: DireccionEnvio | null;
+  mostrarNotas?: boolean;
+}) {
   if (!datos) {
     return <p style={{ color: "rgba(0,0,0,0.5)" }}>Sin dirección registrada.</p>;
   }
@@ -306,7 +357,8 @@ function DireccionEnvioView({ datos }: { datos?: DireccionEnvio | null }) {
     { label: "Código postal", valor: datos.codigoPostal },
   ].filter((l) => l.valor && String(l.valor).trim().length > 0);
 
-  const hayDatos = lineas.length > 0 || Boolean(datos.notas && datos.notas.trim());
+  const hayNotas = Boolean(mostrarNotas && datos.notas && datos.notas.trim());
+  const hayDatos = lineas.length > 0 || hayNotas;
 
   if (!hayDatos) {
     return <p style={{ color: "rgba(0,0,0,0.5)" }}>Sin dirección registrada.</p>;
@@ -324,9 +376,9 @@ function DireccionEnvioView({ datos }: { datos?: DireccionEnvio | null }) {
           ))}
         </ul>
       )}
-      {datos.notas && datos.notas.trim() && (
+      {mostrarNotas && datos.notas && datos.notas.trim() && (
         <div style={{ marginTop: "0.5rem", padding: "0.75rem 1rem", background: "rgba(17,17,17,0.03)", borderRadius: "0.5rem" }}>
-          <div style={{ color: "rgba(0,0,0,0.55)", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>Observaciones</div>
+          <div style={ETIQUETA}>Observaciones</div>
           <p style={{ margin: "0.25rem 0 0", whiteSpace: "pre-wrap", fontStyle: "italic" }}>&ldquo;{datos.notas}&rdquo;</p>
         </div>
       )}
