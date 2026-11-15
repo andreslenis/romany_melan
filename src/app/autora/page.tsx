@@ -5,7 +5,7 @@ import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 
 export const metadata = {
-  title: "La Autora & El Origen | Romany Melan",
+  title: "La Autora & El Origen",
   description:
     "Conoce a Melany Roman, fundadora de Romany Melan. Micro-macramé, técnicas, materiales y todo lo referente a la marca.",
 };

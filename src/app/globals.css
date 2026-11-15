@@ -235,6 +235,26 @@ button {
   height: clamp(150px, 28vw, 230px);
 }
 
+.hero-brand-name {
+  font-family: serif;
+  font-size: clamp(1.5rem, 5vw, 2.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  text-align: center;
+  color: var(--color-accent);
+}
+
+.hero-title-seo {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.35rem, 3.4vw, 2.1rem);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-align: center;
+  max-width: 34ch;
+  color: var(--color-accent);
+}
+
 .hero-subtitle {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: clamp(1.25rem, 4vw, 2rem);

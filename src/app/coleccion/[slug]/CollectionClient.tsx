@@ -2,40 +2,18 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { use, useEffect, useMemo, useState } from "react";
-import { usePerfil } from "@/context/ProfileContext";
+import { useMemo, useState } from "react";
+
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import ProductPrice from "@/components/product/ProductPrice";
-import { supabase } from "@/lib/supabase/client";
+import { usePerfil } from "@/context/ProfileContext";
+import { altProducto } from "@/lib/seo";
+import type { ProductoDB } from "@/lib/supabase/queries";
+import type { Coleccion } from "@/lib/types";
 import { precioFinal } from "@/utils/precio";
 
-type Producto = {
-  id: string;
-  slug: string;
-  nombre: string;
-  linea: string;
-  precio_cop?: number;
-  precio_promo?: number | null;
-  promo_activa?: boolean | null;
-  descripcion_corta?: string;
-  imagenes?: string[];
-  activo?: boolean;
-  coleccion_id?: string;
-};
-
-type Coleccion = {
-  id: string;
-  nombre: string;
-  slug: string;
-  lema?: string;
-  descripcion_larga?: string;
-  acento_color_hex?: string;
-  foto_url?: string;
-  texto_boton?: string;
-  modo_acceso?: string;
-  activa?: boolean;
-};
+type Producto = ProductoDB;
 
 type OrdenCatalogo = "destacado" | "precio-asc" | "precio-desc" | "alfabetico";
 
@@ -54,45 +32,23 @@ function precioEfectivo(p: Producto): number {
   });
 }
 
-export default function CollectionClient({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
+interface CollectionClientProps {
+  coleccion: Coleccion;
+  productos: Producto[];
+  slug: string;
+}
+
+export default function CollectionClient({
+  coleccion,
+  productos,
+  slug,
+}: CollectionClientProps) {
   const { perfil, hydrated } = usePerfil();
-  const [coleccion, setColeccion] = useState<Coleccion | null>(null);
-  const [productos, setProductos] = useState<Producto[]>([]);
   const [linea, setLinea] = useState<"origen" | "singular">("origen");
   const [singularLocked, setSingularLocked] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [orden, setOrden] = useState<OrdenCatalogo>("destacado");
 
-  useEffect(() => {
-    const load = async () => {
-      let c: Coleccion | null = null;
-      const { data: bySlug } = await supabase
-        .from("colecciones")
-        .select("*")
-        .eq("slug", slug)
-        .maybeSingle();
-      if (bySlug) c = bySlug as Coleccion;
-
-      if (!c) {
-        const { data: cols } = await supabase.from("colecciones").select("*");
-        c = (cols || []).find((x: Coleccion) => String(x.slug || x.nombre).toLowerCase() === slug.toLowerCase()) || null;
-      }
-
-      setColeccion(c);
-      if (c) {
-        const { data: prods } = await supabase
-          .from("productos")
-          .select("*")
-          .eq("coleccion_id", c.id)
-          .eq("activo", true)
-          .order("nombre");
-        setProductos((prods || []) as Producto[]);
-      }
-      setLoading(false);
-    };
-    load();
-  }, [slug]);
+  const nombreColeccion = coleccion.nombre || slug;
 
   const norm = (l: string | number | boolean | null | undefined) => String(l).toLowerCase();
   const productosLinea = useMemo(() => {
@@ -146,33 +102,6 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
                 Crear perfil
               </Link>
             </div>
-          </div>
-        </main>
-        <SiteFooter />
-      </>
-    );
-  }
-
-  if (loading) {
-    return (
-      <>
-        <SiteHeader />
-        <main className="collection-page">
-          <div className="container"><p>Cargando colección…</p></div>
-        </main>
-        <SiteFooter />
-      </>
-    );
-  }
-
-  if (!coleccion) {
-    return (
-      <>
-        <SiteHeader />
-        <main className="collection-page">
-          <div className="container">
-            <p>Colección no encontrada.</p>
-            <Link href="/" className="cta-btn">Volver al inicio</Link>
           </div>
         </main>
         <SiteFooter />
@@ -244,8 +173,25 @@ export default function CollectionClient({ params }: { params: Promise<{ slug: s
                   const img = Array.isArray(p.imagenes) && p.imagenes.length ? p.imagenes[0] : "";
                   return (
                     <article key={p.slug || p.id} className="product-card">
-                      <Link className="product-card-media product-card-media--link" href={`/producto/${p.slug}`}>
-                        {img && <Image src={img} alt={p.nombre} fill style={{ objectFit: "cover" }} sizes="33vw" />}
+                      <Link
+                        className="product-card-media product-card-media--link"
+                        href={`/producto/${p.slug}`}
+                        aria-label={`Conoce la historia de ${p.nombre}`}
+                      >
+                        {img && (
+                          <Image
+                            src={img}
+                            alt={altProducto({
+                              nombre: p.nombre,
+                              material: p.especificaciones?.material,
+                              piedra: p.especificaciones?.piedra,
+                              coleccion: nombreColeccion,
+                            })}
+                            fill
+                            style={{ objectFit: "cover" }}
+                            sizes="33vw"
+                          />
+                        )}
                       </Link>
                       <div className="product-card-body">
                         <h3 className="product-card-title">{p.nombre}</h3>

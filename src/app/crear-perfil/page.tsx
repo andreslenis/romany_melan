@@ -6,7 +6,7 @@ import SiteHeader from "@/components/SiteHeader";
 import CrearPerfil from "@/components/profile/CrearPerfil";
 
 export const metadata = {
-  title: "Crear Perfil | Romany Melan",
+  title: "Crear Perfil",
   description:
     "Crea tu perfil para acceder al Círculo Romany Melan, productos privados, certificados y lanzamientos de edición limitada.",
 };
