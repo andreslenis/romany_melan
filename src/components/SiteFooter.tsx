@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+
+import { PAGINA_POLITICA } from "@/lib/politicas";
 
 export default function SiteFooter() {
   const [trustOpen, setTrustOpen] = useState(false);
@@ -21,6 +24,11 @@ export default function SiteFooter() {
             <button className="footer-link" onClick={() => setPoliciesOpen(true)}>
               Políticas
             </button>
+          </li>
+          <li>
+            <Link className="footer-link" href={PAGINA_POLITICA.href}>
+              {PAGINA_POLITICA.enlaceFooter}
+            </Link>
           </li>
           <li>
             <button className="footer-link" onClick={() => setTrustOpen(true)}>
@@ -154,7 +162,7 @@ export default function SiteFooter() {
               <details style={{ border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px", padding: "1rem" }}>
                 <summary style={{ fontWeight: 600, cursor: "pointer", fontSize: "1rem" }}>Políticas de envío</summary>
                 <div style={{ marginTop: "1rem", lineHeight: 1.7, color: "#333" }}>
-                  <p><strong>Tiempos de preparación:</strong> Al ser piezas de alta joyería artesanal elaboradas a mano (micro-macramé, engaste de gemas y acabados en oro laminado), cada pedido requiere un tiempo de taller de 2 a 5 días hábiles antes de ser despachado.</p>
+                  <p><strong>Tiempos de preparación:</strong> Al ser piezas de alta joyería artesanal elaboradas a mano (micro-macramé, engaste de gemas y acabados en oro laminado), cada pedido requiere un tiempo de taller de 3 a 5 días hábiles antes de ser despachado.</p>
                   <p><strong>Tiempos de entrega:</strong> Una vez despachado, los tiempos de envío varían según la ciudad de destino (generalmente entre 2 y 5 días hábiles a nivel nacional).</p>
                   <p><strong>Costos de envío:</strong> Se calcula dentro del precio del producto, no cobramos otro valor diferente a este. Ofrecemos envíos seguros para garantizar que cada pieza llegue en perfectas condiciones.</p>
                 </div>
@@ -162,9 +170,18 @@ export default function SiteFooter() {
               <details style={{ border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px", padding: "1rem" }}>
                 <summary style={{ fontWeight: 600, cursor: "pointer", fontSize: "1rem" }}>Cambios y Garantías</summary>
                 <div style={{ marginTop: "1rem", lineHeight: 1.7, color: "#333" }}>
-                  <p><strong>Garantía por calidad:</strong> Todas nuestras piezas cuentan con garantía de 30 días por defectos de fabricación en el tejido de micro-macramé, cierres o componentes metálicos (oro laminado 18K y acero inoxidable).</p>
-                  <p><strong>Condiciones de cambio:</strong> Debido a la naturaleza artesanal e íntima de las joyas, aceptamos solicitudes de cambio por defectos de fábrica o inconformidad en el modelo dentro de los 5 días hábiles posteriores a la recepción del pedido. La pieza debe conservar su empaque original y no presentar signos de uso indebido.</p>
-                  <p><strong>Exclusiones:</strong> No aplican cambios por desgaste natural debido al uso inadecuado, exposición a químicos abrasivos, perfumes o humedad excesiva.</p>
+                  <p><strong>Garantía por defectos de fabricación:</strong> 30 días desde la recepción del pedido para defectos en hilos, estructura de micro-macramé, componentes metálicos o gemas.</p>
+                  <p><strong>Condiciones:</strong> la pieza debe estar en perfecto estado, sin signos de uso indebido y conservando su empaque original. No realizamos devoluciones de dinero por cambios de opinión o preferencia personal, únicamente por garantía o desperfecto de fabricación verificado.</p>
+                  <p><strong>Procedimiento:</strong> escríbenos por WhatsApp, Instagram o correo electrónico y te indicaremos los pasos para enviar la pieza a nuestro taller.</p>
+                  <p>
+                    <Link
+                      href={PAGINA_POLITICA.href}
+                      className="policy-modal-link"
+                      onClick={() => setPoliciesOpen(false)}
+                    >
+                      Ver política completa
+                    </Link>
+                  </p>
                 </div>
               </details>
               <details style={{ border: "1px solid rgba(0,0,0,0.1)", borderRadius: "8px", padding: "1rem" }}>

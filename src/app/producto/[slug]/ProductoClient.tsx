@@ -11,6 +11,7 @@ import { useCart } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
 
 import { COLORES_HILO, colorPorId } from "@/lib/pecados";
+import { NOTA_PRODUCTO, PAGINA_POLITICA } from "@/lib/politicas";
 import { altProducto, SITE_URL } from "@/lib/seo";
 import type { ProductoDB } from "@/lib/supabase/queries";
 import { LINEAS_CORTAS, type Linea } from "@/lib/types";
@@ -614,6 +615,12 @@ export default function ProductoClient({
                     </form>
                   )}
                 </div>
+
+                <p className="pdp-access-note pdp-policy-note">
+                  {NOTA_PRODUCTO.antes}
+                  <Link href={PAGINA_POLITICA.href}>{NOTA_PRODUCTO.enlace}</Link>
+                  {NOTA_PRODUCTO.despues}
+                </p>
 
                 <div className="pdp-share" style={{ marginTop: "1.5rem" }}>
                     <p className="pdp-share-note">Comparte este articulo con quien desees</p>

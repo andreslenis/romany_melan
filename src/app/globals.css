@@ -3341,4 +3341,75 @@ button {
   border-color: #eda0a0;
 }
 
+/* Página de políticas (devoluciones y garantías) */
+.policy-page {
+  padding: clamp(3rem, 8vw, 6rem) 0;
+}
+
+.policy-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  text-align: center;
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.policy-section {
+  max-width: 760px;
+  margin: 0 auto 2.25rem;
+}
+
+.policy-section-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin-bottom: 0.6rem;
+}
+
+.policy-text {
+  line-height: 1.75;
+  color: rgba(17, 17, 17, 0.75);
+  margin-bottom: 0.75rem;
+}
+
+.policy-contact-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.policy-contact-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.92rem;
+}
+
+.policy-contact-list a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.policy-cta {
+  display: inline-block;
+  margin-top: 1.25rem;
+}
+
+/* Nota de políticas bajo el botón de compra */
+.pdp-policy-note {
+  margin-top: 1rem;
+}
+
+.pdp-policy-note a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.policy-modal-link {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 
