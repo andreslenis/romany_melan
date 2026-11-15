@@ -219,3 +219,86 @@ export async function getProductosActivos(): Promise<ProductoDB[]> {
     return [];
   }
 }
+
+interface ProductosRelacionadosParams {
+  slugActual: string;
+  grupoActual?: string | null;
+  coleccionId?: string | null;
+  limite?: number;
+}
+
+function esVarianteMisma(
+  producto: ProductoDB,
+  grupoActual?: string | null
+): boolean {
+  return Boolean(grupoActual) && Boolean(producto.grupo) && producto.grupo === grupoActual;
+}
+
+/**
+ * Productos para promocionar en la ficha: activos, con stock y disponibles.
+ * Prioriza la misma colección y completa con el resto del inventario.
+ */
+export async function getProductosRelacionados({
+  slugActual,
+  grupoActual,
+  coleccionId,
+  limite = 2,
+}: ProductosRelacionadosParams): Promise<ProductoDB[]> {
+  const seleccionados: ProductoDB[] = [];
+
+  const agregar = (productos: ProductoDB[] | null) => {
+    for (const producto of productos || []) {
+      if (seleccionados.length >= limite) return;
+      if (!producto?.slug || producto.slug === slugActual) continue;
+      if (esVarianteMisma(producto, grupoActual)) continue;
+      if (seleccionados.some((p) => p.slug === producto.slug)) continue;
+      seleccionados.push(producto);
+    }
+  };
+
+  try {
+    const supabase = createClientServer();
+
+    if (coleccionId) {
+      const { data, error } = await supabase
+        .from("productos")
+        .select("*")
+        .eq("activo", true)
+        .gt("stock_disponible", 0)
+        .eq("modo_acceso", "disponible")
+        .eq("coleccion_id", coleccionId)
+        .neq("slug", slugActual)
+        .order("nombre")
+        .limit(limite + 4);
+
+      if (error) {
+        console.error("[queries] getProductosRelacionados", error.message);
+      } else {
+        agregar(data as ProductoDB[]);
+      }
+    }
+
+    if (seleccionados.length < limite) {
+      const { data, error } = await supabase
+        .from("productos")
+        .select("*")
+        .eq("activo", true)
+        .gt("stock_disponible", 0)
+        .eq("modo_acceso", "disponible")
+        .neq("slug", slugActual)
+        .order("nombre")
+        .limit(limite * 8);
+
+      if (error) {
+        console.error("[queries] getProductosRelacionados", error.message);
+      } else {
+        agregar(data as ProductoDB[]);
+      }
+    }
+
+    return seleccionados.slice(0, limite);
+  } catch (error) {
+    console.error("[queries] getProductosRelacionados", error);
+    return [];
+  }
+}

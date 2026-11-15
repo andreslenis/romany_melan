@@ -10,6 +10,7 @@ import { usePerfil } from "@/context/ProfileContext";
 const ENLACES_DESKTOP = [
   { href: "/", label: "Inicio" },
   { href: "/autora", label: "La Autora" },
+  { href: "/blog", label: "Blog" },
 ];
 
 const ICON_USER = (

@@ -6,6 +6,7 @@ import {
   getNombreColeccion,
   getProductoPorSlug,
   getProductosActivos,
+  getProductosRelacionados,
   getVariantesPorGrupo,
   type ProductoDB,
 } from "@/lib/supabase/queries";
@@ -88,12 +89,19 @@ export default async function ProductoPage({ params }: ProductoPageProps) {
     ? await getVariantesPorGrupo(producto.grupo)
     : [producto];
   const coleccionNombre = await getNombreColeccion(producto.coleccion_id);
+  const relacionados = await getProductosRelacionados({
+    slugActual: producto.slug,
+    grupoActual: producto.grupo,
+    coleccionId: producto.coleccion_id,
+    limite: 2,
+  });
 
   return (
     <ProductoClient
       producto={producto}
       variantes={variantes}
       coleccionNombre={coleccionNombre}
+      relacionados={relacionados}
     />
   );
 }

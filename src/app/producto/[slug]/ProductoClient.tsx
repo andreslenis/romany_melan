@@ -6,6 +6,7 @@ import Image from "next/image";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import RelatedProducts from "@/components/product/RelatedProducts";
 
 import { useCart } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
@@ -23,12 +24,14 @@ interface ProductoClientProps {
   producto: DBProd;
   variantes: DBProd[];
   coleccionNombre: string | null;
+  relacionados: DBProd[];
 }
 
 export default function ProductoClient({
   producto: productoBase,
   variantes: variantesIniciales,
   coleccionNombre,
+  relacionados,
 }: ProductoClientProps) {
   const { addItem } = useCart();
   const { perfil, solicitarEspera } = usePerfil();
@@ -721,6 +724,8 @@ export default function ProductoClient({
           </div>
         </section>
       </main>
+
+      <RelatedProducts productos={relacionados} />
 
       <SiteFooter />
 

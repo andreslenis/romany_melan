@@ -41,9 +41,14 @@ export default function SiteFooter() {
             </button>
           </li>
           <li>
-            <a className="footer-link" href="/mi-perfil">
+            <Link className="footer-link" href="/mi-perfil">
               Círculo Romany Melan
-            </a>
+            </Link>
+          </li>
+          <li>
+            <Link className="footer-link" href="/blog">
+              Blog
+            </Link>
           </li>
         </ul>
         <div className="socials">
