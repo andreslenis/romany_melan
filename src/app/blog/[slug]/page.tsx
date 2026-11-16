@@ -9,7 +9,7 @@ import SiteHeader from "@/components/SiteHeader";
 import { getBlogSlugs, getPostBySlug } from "@/lib/blog";
 import { formatearFecha } from "@/utils/format";
 
-export const revalidate = 3600;
+export const revalidate = 300;
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;

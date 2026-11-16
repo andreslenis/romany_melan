@@ -1,7 +1,4 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-
-import matter from "gray-matter";
+import { createClientServer } from "@/lib/supabase/server";
 
 export interface BlogCta {
   etiqueta: string;
@@ -18,7 +15,6 @@ export interface BlogFrontmatter {
   categoria?: string;
   cover?: string;
   coverAlt?: string;
-  tags?: string[];
   cta?: BlogCta[];
 }
 
@@ -28,96 +24,111 @@ export interface BlogPost {
   content: string;
 }
 
-const BLOG_DIR = path.join(process.cwd(), "content", "blog");
-
-function toStringValue(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim().length > 0
-    ? value.trim()
-    : undefined;
+interface BlogRow {
+  slug: string;
+  titulo: string;
+  resumen: string;
+  contenido: string;
+  portada?: string | null;
+  portada_alt?: string | null;
+  cta_texto?: string | null;
+  cta_url?: string | null;
+  categoria?: string | null;
+  publicado?: boolean | null;
+  fecha_publicacion?: string | null;
+  updated_at?: string | null;
 }
 
-function toCtaList(value: unknown): BlogCta[] {
-  if (!Array.isArray(value)) return [];
+const AUTOR = "Romany Melan";
 
-  const ctas: BlogCta[] = [];
-  for (const item of value) {
-    if (!item || typeof item !== "object") continue;
-    const registro = item as Record<string, unknown>;
-    const etiqueta = toStringValue(registro.etiqueta);
-    const href = toStringValue(registro.href);
-    if (!etiqueta || !href) continue;
-    ctas.push({
-      etiqueta,
-      href,
-      descripcion: toStringValue(registro.descripcion),
-    });
-  }
-  return ctas;
-}
+function mapRow(row: BlogRow): BlogPost {
+  const cta: BlogCta[] = [];
+  const etiqueta = row.cta_texto?.trim();
+  const href = row.cta_url?.trim();
 
-function toTagList(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((tag) => toStringValue(tag))
-    .filter((tag): tag is string => Boolean(tag));
-}
-
-function parsePost(slug: string, raw: string): BlogPost | null {
-  const { data, content } = matter(raw);
-  const title = toStringValue(data.title);
-  const description = toStringValue(data.description);
-
-  if (!title || !description) {
-    console.error(`[blog] ${slug}: faltan title o description en el frontmatter`);
-    return null;
+  if (etiqueta && href) {
+    cta.push({ etiqueta, href });
   }
 
-  const frontmatter: BlogFrontmatter = {
-    title,
-    description,
-    date: toStringValue(data.date) || new Date().toISOString().slice(0, 10),
-    updated: toStringValue(data.updated),
-    author: toStringValue(data.author),
-    categoria: toStringValue(data.categoria),
-    cover: toStringValue(data.cover),
-    coverAlt: toStringValue(data.coverAlt),
-    tags: toTagList(data.tags),
-    cta: toCtaList(data.cta),
+  return {
+    slug: row.slug,
+    content: row.contenido || "",
+    frontmatter: {
+      title: row.titulo,
+      description: row.resumen,
+      date: row.fecha_publicacion || new Date().toISOString().slice(0, 10),
+      updated: row.updated_at ? row.updated_at.slice(0, 10) : undefined,
+      author: AUTOR,
+      categoria: row.categoria || undefined,
+      cover: row.portada || undefined,
+      coverAlt: row.portada_alt || row.titulo,
+      cta,
+    },
   };
-
-  return { slug, frontmatter, content: content.trim() };
 }
 
-export async function getBlogSlugs(): Promise<string[]> {
+/** Entradas publicadas, de la más reciente a la más antigua. */
+export async function getAllPosts(): Promise<BlogPost[]> {
   try {
-    const files = await fs.readdir(BLOG_DIR);
-    return files
-      .filter((file) => file.toLowerCase().endsWith(".md"))
-      .map((file) => file.replace(/\.md$/i, ""));
+    const supabase = createClientServer();
+    const { data, error } = await supabase
+      .from("blog_posts")
+      .select("*")
+      .eq("publicado", true)
+      .order("fecha_publicacion", { ascending: false });
+
+    if (error) {
+      console.error("[blog] getAllPosts", error.message);
+      return [];
+    }
+
+    return (data || []).map((row) => mapRow(row as BlogRow));
   } catch (error) {
-    console.error("[blog] getBlogSlugs", error);
+    console.error("[blog] getAllPosts", error);
     return [];
   }
 }
 
-export async function getAllPosts(): Promise<BlogPost[]> {
-  const slugs = await getBlogSlugs();
-  const posts: BlogPost[] = [];
-
-  for (const slug of slugs) {
-    const post = await getPostBySlug(slug);
-    if (post) posts.push(post);
-  }
-
-  return posts.sort((a, b) => b.frontmatter.date.localeCompare(a.frontmatter.date));
-}
-
+/** Entrada publicada por slug. */
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   try {
-    const raw = await fs.readFile(path.join(BLOG_DIR, `${slug}.md`), "utf-8");
-    return parsePost(slug, raw);
+    const supabase = createClientServer();
+    const { data, error } = await supabase
+      .from("blog_posts")
+      .select("*")
+      .eq("slug", slug)
+      .eq("publicado", true)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[blog] getPostBySlug", error.message);
+      return null;
+    }
+
+    return data ? mapRow(data as BlogRow) : null;
   } catch (error) {
-    console.error(`[blog] getPostBySlug ${slug}`, error);
+    console.error("[blog] getPostBySlug", error);
     return null;
+  }
+}
+
+/** Slugs publicados (para generateStaticParams). */
+export async function getBlogSlugs(): Promise<string[]> {
+  try {
+    const supabase = createClientServer();
+    const { data, error } = await supabase
+      .from("blog_posts")
+      .select("slug")
+      .eq("publicado", true);
+
+    if (error) {
+      console.error("[blog] getBlogSlugs", error.message);
+      return [];
+    }
+
+    return (data || []).map((row) => String(row.slug));
+  } catch (error) {
+    console.error("[blog] getBlogSlugs", error);
+    return [];
   }
 }
