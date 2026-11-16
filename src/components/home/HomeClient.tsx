@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import Hero from "@/components/home/Hero";
 import { usePerfil } from "@/context/ProfileContext";
-import { HOME_H1, HOME_H2 } from "@/lib/seo";
 import type { Coleccion } from "@/lib/types";
 
 interface HomeClientProps {
@@ -58,39 +58,7 @@ export default function HomeClient({ colecciones }: HomeClientProps) {
       <SiteHeader />
 
       <main id="inicio">
-        <section className="hero">
-          <div className="container hero-content fade-in">
-            <div className="hero-brand">
-              <div className="hero-isotipo">
-                <Image
-                  src="/resources/isotipo.png"
-                  alt="Isotipo Romany Melan · joyería de autor en Colombia"
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 70vw, 380px"
-                  style={{ objectFit: "contain" }}
-                />
-              </div>
-              <p className="hero-brand-name" aria-hidden="true">ROMANY MELAN</p>
-              <h1 className="hero-title-seo">{HOME_H1}</h1>
-              <h2 className="hero-subtitle">{HOME_H2}</h2>
-            </div>
-            <h3 className="section-subtitle">— EL ORIGEN Y LA MATERIA</h3>
-            <p className="hero-text">
-              Romany Melan celebra la belleza en su estado más puro y orgánico,
-              rindiendo culto a la fuerza de la naturaleza. Cada pieza es un
-              encuentro atemporal donde el arte, la piedra y la fibra se entrelazan
-              para contar una historia entre la joya y quien la porta.
-            </p>
-            <a className="cta-btn" href="#coleccion">
-              Adentrarse en las Historias
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3.33334 8H12.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M8 3.33334L12.6667 8L8 12.6667" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </a>
-          </div>
-        </section>
+        <Hero />
 
         <section className="collection-section" id="coleccion">
           <div className="container">

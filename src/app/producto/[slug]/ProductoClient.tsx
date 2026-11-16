@@ -17,6 +17,7 @@ import type { ProductoDB } from "@/lib/supabase/queries";
 import { LINEAS_CORTAS, type Linea } from "@/lib/types";
 import { precioFinal, precioRegular, promoVigente } from "@/utils/precio";
 import type { ColorHilo } from "@/lib/colores";
+import ProductDetailActions from "@/components/product/ProductDetailActions";
 
 type DBProd = ProductoDB;
 
@@ -303,6 +304,8 @@ export default function ProductoClient({
     });
   };
 
+  const whatsappMessage = `Hola Romany, quiero asesoría sobre ${producto.nombre} que vi en la página.`;
+
   const handleEspera = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const email = (emailEspera || perfil?.email || "").trim();
@@ -577,14 +580,11 @@ export default function ProductoClient({
 
                 <div className="pdp-actions">
                   {producto.modoAcceso === "disponible" ? (
-                    <>
-                      <button className="pdp-add-btn" onClick={handleAddToCart} disabled={!puedeAgregar}>
-                        Tejer esta Historia en mi Piel
-                      </button>
-                      {requiereTalla && !selectedSize && (
-                        <p className="pdp-size-hint">Selecciona una talla para continuar.</p>
-                      )}
-                    </>
+                    <ProductDetailActions
+                      price={precioCobrado}
+                      whatsappMessage={whatsappMessage}
+                      onAddToCart={handleAddToCart}
+                    />
                   ) : producto.modoAcceso === "circulo" ? (
                     <>
                       <Link className="pdp-add-btn pdp-add-btn--outline" href="/mi-perfil">
@@ -593,14 +593,11 @@ export default function ProductoClient({
                       <p className="pdp-access-note">Esta obra no está en stock abierto. Crea tu perfil en el Círculo para solicitar el acceso y ser notificado cuando haya una edición disponible.</p>
                     </>
                   ) : !esSingular ? (
-                    <>
-                      <button className="pdp-add-btn" onClick={handleAddToCart} disabled={!puedeAgregar}>
-                        Tejer esta Historia en mi Piel
-                      </button>
-                      {requiereTalla && !selectedSize && (
-                        <p className="pdp-size-hint">Selecciona una talla para continuar.</p>
-                      )}
-                    </>
+                    <ProductDetailActions
+                      price={precioCobrado}
+                      whatsappMessage={whatsappMessage}
+                      onAddToCart={handleAddToCart}
+                    />
                   ) : esperaRegistrada ? (
                     <p className="pdp-waitlist-done">
                       Te anotamos en la lista de espera de <strong>{producto.nombre}</strong>. Te avisaremos por correo cuando abramos la próxima edición.
