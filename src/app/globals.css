@@ -536,6 +536,11 @@ button {
   transform: scale(1.06);
 }
 
+.card-media--proximamente {
+  filter: grayscale(1);
+  transition: filter 0.4s ease, transform 0.6s ease;
+}
+
 .card-content {
   display: flex;
   flex-direction: column;

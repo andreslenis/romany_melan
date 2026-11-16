@@ -38,6 +38,7 @@ export interface Coleccion {
   acento_color_hex?: string;
   activa?: boolean;
   modo_acceso?: ModoColeccion;
+  orden?: number;
 }
 
 export interface Producto {

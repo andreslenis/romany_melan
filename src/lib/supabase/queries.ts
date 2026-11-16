@@ -45,6 +45,7 @@ export async function getColeccionesPublicas(): Promise<Coleccion[]> {
       .from("colecciones")
       .select("*")
       .neq("modo_acceso", "inactiva")
+      .order("orden", { ascending: true })
       .order("nombre");
 
     if (error) {
@@ -66,6 +67,7 @@ export async function getColeccionesActivas(): Promise<Coleccion[]> {
       .from("colecciones")
       .select("*")
       .eq("modo_acceso", "activa")
+      .order("orden", { ascending: true })
       .order("nombre");
 
     if (error) {

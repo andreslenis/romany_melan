@@ -4,7 +4,12 @@ import { useEffect, useState, useRef } from "react";
 import AdminGuard from "@/components/admin/AdminGuard";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
-import { COLORES_HILO } from "@/lib/pecados";
+
+type ColorHilo = {
+  slug: string;
+  nombre: string;
+  hex: string;
+};
 
 type Producto = {
   id: string;
@@ -32,6 +37,7 @@ export default function AdminProductos() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [colecciones, setColecciones] = useState<{ id: string; nombre: string }[]>([]);
   const [coleccionId, setColeccionId] = useState<string>("");
+  const [coloresCatalogo, setColoresCatalogo] = useState<ColorHilo[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     nombre: "",
@@ -64,6 +70,13 @@ export default function AdminProductos() {
     const { data: cols } = await supabase.from("colecciones").select("id,nombre").order("nombre");
     setColecciones(cols || []);
     if (cols && cols.length && !coleccionId) setColeccionId(cols[0].id);
+    const { data: colores } = await supabase
+      .from("colores_hilo")
+      .select("slug, nombre, hex")
+      .eq("activo", true)
+      .order("orden", { ascending: true })
+      .order("nombre");
+    setColoresCatalogo((colores || []) as ColorHilo[]);
     setLoading(true);
     try {
       const { data, error } = await supabase.from("productos").select("*").order("nombre", { ascending: true });
@@ -444,28 +457,34 @@ export default function AdminProductos() {
               {form.linea === "origen" && (
                 <div className="admin-form-field admin-form-field--full">
                   <label className="admin-form-label">Variantes de color de hilo</label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                    {COLORES_HILO.map((c) => (
-                      <label key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.6rem", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "4px", cursor: "pointer" }}>
-                        <input
-                          type="checkbox"
-                          checked={form.coloresHilo.includes(c.id)}
-                          onChange={(e) => {
-                            setForm((prev) => {
-                              const next = e.target.checked
-                                ? [...prev.coloresHilo, c.id]
-                                : prev.coloresHilo.filter((id) => id !== c.id);
-                              const imgs = { ...(prev.imagenesPorColor || {}) };
-                              if (!e.target.checked) delete imgs[c.id];
-                              return { ...prev, coloresHilo: next, imagenesPorColor: imgs };
-                            });
-                          }}
-                        />
-                        <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: c.hex }} />
-                        <span style={{ fontSize: "0.85rem" }}>{c.nombre}</span>
-                      </label>
-                    ))}
-                  </div>
+                  {coloresCatalogo.length === 0 ? (
+                    <p style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)" }}>
+                      No hay colores en el catálogo. Crea colores en <Link href="/admin/colores" style={{ color: "var(--color-accent)" }}>Gestor de Colores</Link>.
+                    </p>
+                  ) : (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                      {coloresCatalogo.map((c) => (
+                        <label key={c.slug} style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.4rem 0.6rem", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "4px", cursor: "pointer" }}>
+                          <input
+                            type="checkbox"
+                            checked={form.coloresHilo.includes(c.slug)}
+                            onChange={(e) => {
+                              setForm((prev) => {
+                                const next = e.target.checked
+                                  ? [...prev.coloresHilo, c.slug]
+                                  : prev.coloresHilo.filter((id) => id !== c.slug);
+                                const imgs = { ...(prev.imagenesPorColor || {}) };
+                                if (!e.target.checked) delete imgs[c.slug];
+                                return { ...prev, coloresHilo: next, imagenesPorColor: imgs };
+                              });
+                            }}
+                          />
+                          <span style={{ width: "14px", height: "14px", borderRadius: "50%", background: c.hex }} />
+                          <span style={{ fontSize: "0.85rem" }}>{c.nombre}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               {form.linea === "origen" && form.coloresHilo.length > 0 && (
@@ -473,7 +492,7 @@ export default function AdminProductos() {
                   <p style={{ marginBottom: "0.75rem", fontSize: "0.78rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "rgba(17,17,17,0.6)" }}>Imágenes por variante de color</p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {form.coloresHilo.map((colorId) => {
-                      const color = COLORES_HILO.find((c) => c.id === colorId);
+                      const color = coloresCatalogo.find((c) => c.slug === colorId);
                       return (
                         <div key={colorId} style={{ padding: "0.75rem", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "4px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>

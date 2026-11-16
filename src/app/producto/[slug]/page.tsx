@@ -10,6 +10,7 @@ import {
   getVariantesPorGrupo,
   type ProductoDB,
 } from "@/lib/supabase/queries";
+import { getColoresHilo } from "@/lib/colores";
 
 export const revalidate = 3600;
 
@@ -89,6 +90,7 @@ export default async function ProductoPage({ params }: ProductoPageProps) {
     ? await getVariantesPorGrupo(producto.grupo)
     : [producto];
   const coleccionNombre = await getNombreColeccion(producto.coleccion_id);
+  const coloresCatalogo = await getColoresHilo();
   const relacionados = await getProductosRelacionados({
     slugActual: producto.slug,
     grupoActual: producto.grupo,
@@ -102,6 +104,7 @@ export default async function ProductoPage({ params }: ProductoPageProps) {
       variantes={variantes}
       coleccionNombre={coleccionNombre}
       relacionados={relacionados}
+      coloresCatalogo={coloresCatalogo}
     />
   );
 }

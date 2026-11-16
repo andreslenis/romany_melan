@@ -88,6 +88,17 @@ export default function AdminDashboard() {
               </div>
               <span className="admin-module-arrow">→</span>
             </Link>
+
+            <Link href="/admin/colores" className="admin-module admin-module--colores">
+              <div className="admin-module-seal" aria-hidden="true">✦</div>
+              <div className="admin-module-body">
+                <h2 className="admin-module-title">Gestor de Colores de Hilo</h2>
+                <p className="admin-module-desc">
+                  Crear y editar los colores de hilo disponibles para las variantes.
+                </p>
+              </div>
+              <span className="admin-module-arrow">→</span>
+            </Link>
           </div>
 
           <div className="admin-actions">
