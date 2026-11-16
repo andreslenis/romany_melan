@@ -6,16 +6,17 @@ import Image from "next/image";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
+import RelatedProducts from "@/components/product/RelatedProducts";
 
 import { useCart } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
 
-import { COLORES_HILO, colorPorId } from "@/lib/pecados";
 import { NOTA_PRODUCTO, PAGINA_POLITICA } from "@/lib/politicas";
 import { altProducto, SITE_URL } from "@/lib/seo";
 import type { ProductoDB } from "@/lib/supabase/queries";
 import { LINEAS_CORTAS, type Linea } from "@/lib/types";
 import { precioFinal, precioRegular, promoVigente } from "@/utils/precio";
+import type { ColorHilo } from "@/lib/colores";
 
 type DBProd = ProductoDB;
 
@@ -23,12 +24,16 @@ interface ProductoClientProps {
   producto: DBProd;
   variantes: DBProd[];
   coleccionNombre: string | null;
+  relacionados: DBProd[];
+  coloresCatalogo: ColorHilo[];
 }
 
 export default function ProductoClient({
   producto: productoBase,
   variantes: variantesIniciales,
   coleccionNombre,
+  relacionados,
+  coloresCatalogo,
 }: ProductoClientProps) {
   const { addItem } = useCart();
   const { perfil, solicitarEspera } = usePerfil();
@@ -75,11 +80,16 @@ export default function ProductoClient({
     return [];
   };
 
-  const colorIdsValidos = new Set(COLORES_HILO.map((c) => c.id));
+  const colorSlugsValidos = new Set(coloresCatalogo.map((c) => c.slug));
+
+  const colorPorSlug = (slug: string | null): ColorHilo | undefined => {
+    if (!slug) return undefined;
+    return coloresCatalogo.find((c) => c.slug === slug);
+  };
 
   const coloresConFoto = (p: DBProd | null): string[] => {
     if (!p) return [];
-    const seleccionados = parseColoresHilo(p.colores_hilo).filter((id) => colorIdsValidos.has(id));
+    const seleccionados = parseColoresHilo(p.colores_hilo).filter((id) => colorSlugsValidos.has(id));
     if (seleccionados.length === 0) return [];
     const imgs = getImgsPorColor(p);
     return seleccionados.filter((id) => typeof imgs[id] === "string" && imgs[id].length > 0);
@@ -145,9 +155,9 @@ export default function ProductoClient({
       if (vLinea !== lineaNormProducto) return;
       coloresConFoto(v).forEach((id) => ids.add(id));
     });
-    return COLORES_HILO.filter((c) => ids.has(c.id));
+    return coloresCatalogo.filter((c) => ids.has(c.slug));
   })();
-  const coloresDisponiblesKey = coloresDisponibles.map((c) => c.id).join("|");
+  const coloresDisponiblesKey = coloresDisponibles.map((c) => c.slug).join("|");
 
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
@@ -172,7 +182,7 @@ export default function ProductoClient({
       setColorHilo(null);
       return;
     }
-    setColorHilo((prev) => (prev && coloresDisponibles.some((c) => c.id === prev) ? prev : coloresDisponibles[0].id));
+    setColorHilo((prev) => (prev && coloresDisponibles.some((c) => c.slug === prev) ? prev : coloresDisponibles[0].slug));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [esSingular, coloresDisponiblesKey]);
 
@@ -213,7 +223,7 @@ export default function ProductoClient({
     );
   }
 
-  const color = colorHilo ? colorPorId(colorHilo) : undefined;
+  const color = colorHilo ? colorPorSlug(colorHilo) : undefined;
   const descripcionCorta = String((producto as unknown as Record<string, unknown>).descripcion_corta || "").trim();
   const historia = String(
     (producto as unknown as Record<string, unknown>).historia_narrativa ||
@@ -287,7 +297,7 @@ export default function ProductoClient({
       imagen: imagenParaCarrito,
       talla: selectedSize,
       colorHilo: esSingular ? null : colorActivoValido,
-      colorHiloHex: esSingular ? null : (colorActivoValido ? colorPorId(colorActivoValido)?.hex ?? null : null),
+      colorHiloHex: esSingular ? null : (colorActivoValido ? colorPorSlug(colorActivoValido)?.hex ?? null : null),
       observaciones,
       coleccion: coleccionNombre,
     });
@@ -514,22 +524,22 @@ export default function ProductoClient({
               ) : coloresDisponibles.length > 0 ? (
                 <div className="pdp-color-block">
                   <h3 className="pdp-block-title">Color del hilo</h3>
-                  <p className="pdp-color-intro">Cada hilo toma el color de un pecado, o los tonos neutros Oscuridad y Luz. Elige el que te acompaña.</p>
+                  <p className="pdp-color-intro">Elige el color de hilo que te acompaña.</p>
                   <div className="color-swatches">
                     {coloresDisponibles.map((opcion) => (
                       <button
-                        key={opcion.id}
+                        key={opcion.slug}
                         type="button"
-                        className={`color-swatch ${colorHilo === opcion.id ? "active" : ""}`}
+                        className={`color-swatch ${colorHilo === opcion.slug ? "active" : ""}`}
                         style={{ backgroundColor: opcion.hex }}
-                        title={`${opcion.nombre} · ${opcion.pecado}`}
-                        aria-label={`Hilo ${opcion.nombre}, color de ${opcion.pecado}`}
-                        aria-pressed={colorHilo === opcion.id}
-                        onClick={() => setColorHilo(opcion.id)}
+                        title={opcion.nombre}
+                        aria-label={`Hilo ${opcion.nombre}`}
+                        aria-pressed={colorHilo === opcion.slug}
+                        onClick={() => setColorHilo(opcion.slug)}
                       />
                     ))}
                   </div>
-                  {color && <p className="color-selected">Hilo {color.nombre} · {color.pecado}</p>}
+                  {color && <p className="color-selected">Hilo {color.nombre}</p>}
                 </div>
               ) : null}
 
@@ -721,6 +731,8 @@ export default function ProductoClient({
           </div>
         </section>
       </main>
+
+      <RelatedProducts productos={relacionados} />
 
       <SiteFooter />
 

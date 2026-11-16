@@ -22,6 +22,7 @@ type ColeccionForm = {
   lema: string;
   acento_color_hex: string;
   modo_acceso: ModoColeccion;
+  orden: number;
 };
 
 export default function AdminColecciones() {
@@ -36,6 +37,7 @@ export default function AdminColecciones() {
     lema: "",
     acento_color_hex: "#A882C1",
     modo_acceso: "activa",
+    orden: 0,
   });
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -95,6 +97,7 @@ export default function AdminColecciones() {
       acento_color_hex: form.acento_color_hex,
       modo_acceso: form.modo_acceso,
       activa: form.modo_acceso === "activa",
+      orden: Number(form.orden) || 0,
     };
 
     try {
@@ -107,7 +110,7 @@ export default function AdminColecciones() {
       }
       setForm({
         nombre: "", slug: "", descripcion: "", foto_url: "", texto_boton: "Ingresar a la Colección",
-        descripcion_larga: "", lema: "", acento_color_hex: "#A882C1", modo_acceso: "activa",
+        descripcion_larga: "", lema: "", acento_color_hex: "#A882C1", modo_acceso: "activa", orden: 0,
       });
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -133,6 +136,7 @@ export default function AdminColecciones() {
       lema: c.lema || "",
       acento_color_hex: c.acento_color_hex || "#A882C1",
       modo_acceso: c.modo_acceso || "activa",
+      orden: c.orden ?? 0,
     });
     setSelectedFile(null);
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -175,6 +179,7 @@ export default function AdminColecciones() {
                 <tr>
                   <th>Nombre</th>
                   <th>Slug</th>
+                  <th>Orden</th>
                   <th>Color</th>
                   <th>Modo</th>
                   <th>Foto</th>
@@ -183,13 +188,14 @@ export default function AdminColecciones() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center" }}>Cargando…</td></tr>
+                  <tr><td colSpan={7} style={{ padding: "2rem", textAlign: "center" }}>Cargando…</td></tr>
                 ) : colecciones.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: "2rem", textAlign: "center", color: "rgba(17,17,17,0.5)" }}>No hay colecciones registradas.</td></tr>
+                  <tr><td colSpan={7} style={{ padding: "2rem", textAlign: "center", color: "rgba(17,17,17,0.5)" }}>No hay colecciones registradas.</td></tr>
                 ) : colecciones.map((c) => (
                   <tr key={c.id}>
                     <td style={{ fontWeight: 500 }}>{c.nombre}</td>
                     <td style={{ fontSize: "0.85rem", color: "rgba(0,0,0,0.5)" }}>{c.slug}</td>
+                    <td style={{ textAlign: "center" }}>{c.orden ?? 0}</td>
                     <td>
                       <span style={{ display: "inline-block", width: 16, height: 16, background: c.acento_color_hex || "#ccc", borderRadius: 4, marginRight: "0.5rem" }} />
                       {c.acento_color_hex || "—"}
@@ -266,6 +272,11 @@ export default function AdminColecciones() {
                     </label>
                   ))}
                 </div>
+              </div>
+              <div className="admin-form-field">
+                <label className="admin-form-label">Orden en el inicio</label>
+                <input className="form-input" type="number" min={0} placeholder="0" value={form.orden} onChange={(e) => setForm({ ...form, orden: Number(e.target.value) })} />
+                <p style={{ fontSize: "0.75rem", color: "rgba(0,0,0,0.5)", marginTop: "0.25rem" }}>Menor número aparece primero. Empates se ordenan por nombre.</p>
               </div>
             </div>
             <button className="cta-btn admin-form-save" onClick={guardar} style={{ marginTop: "1rem" }} disabled={uploading}>

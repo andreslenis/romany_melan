@@ -27,7 +27,18 @@ export default function AdminLogin() {
         return;
       }
       if (data.session) {
-        router.push("/admin/dashboard");
+        // Verificar que la cuenta tenga rol admin antes de entrar al panel.
+        const res = await fetch("/api/admin/auth", {
+          headers: { Authorization: `Bearer ${data.session.access_token}` },
+        });
+        const info = await res.json().catch(() => ({}));
+
+        if (res.ok && info.ok) {
+          router.push("/admin/dashboard");
+        } else {
+          await supabase.auth.signOut();
+          alert("Esta cuenta no tiene permisos de administrador.");
+        }
       }
     } catch {
       alert("Credenciales inválidas");

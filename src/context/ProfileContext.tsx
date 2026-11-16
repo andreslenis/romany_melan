@@ -13,6 +13,7 @@ import {
 
 import { supabase } from "@/lib/supabase/client";
 import { randomId, readStorage, removeStorage, writeStorage } from "@/lib/storage";
+import { useRouter } from "next/navigation";
 import type {
   CartItem,
   DireccionEnvio,
@@ -73,6 +74,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const pedidosRef = useRef<Pedido[]>([]);
   const solicitudesRef = useRef<SolicitudEspera[]>([]);
+  const router = useRouter();
+
+  const safeNext = (next: string | null): string => {
+    if (!next) return "/mi-perfil";
+    if (!next.startsWith("/") || next.startsWith("//")) return "/mi-perfil";
+    return next;
+  };
 
   useEffect(() => {
     const guardados = readStorage<Pedido[]>(PEDIDOS_KEY, []);
@@ -223,12 +231,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
-    try {
-      await supabase.auth.signInWithPassword({ email, password });
-    } catch (e) {
-      console.error(e);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (data.session) {
+      const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+      const next = safeNext(params?.get("next") ?? null);
+      router.push(next);
     }
-  }, []);
+  }, [router]);
 
   const crearPedido = useCallback((datos: CrearPedidoInput): Pedido => {
     const pedido: Pedido = {

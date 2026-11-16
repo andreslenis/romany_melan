@@ -92,43 +92,6 @@ export default function HomeClient({ colecciones }: HomeClientProps) {
           </div>
         </section>
 
-        <section className="author-section" id="autora">
-          <div className="container author-grid">
-            <div className="author-image">
-              <Image
-                src="/resources/autora/melany_roman.jpg"
-                alt="Melany Roman, creadora de Romany Melan"
-                fill
-                style={{ objectFit: "cover" }}
-              />
-            </div>
-            <div className="author-content fade-in">
-              <h3 className="section-subtitle">— LA CREADORA</h3>
-              <h2 className="section-title">La Autora &amp; El Origen</h2>
-            <div className="author-text">
-              <p>
-                Soy Melany Roman y cada joya que llevas puesta ha sido imaginada
-                y tejida directamente por mis manos; fundé Romany Melan para
-                rendir tributo a la belleza de lo auténtico y lo hecho a mano.
-              </p>
-              <p>
-                Encuentro en la técnica del micro-macramé mi lenguaje principal:
-                un arte donde cada nudo teje memoria, intención y emoción.
-              </p>
-              <p>
-                A través de este proceso paciente y minucioso, transformo la
-                fibra, las gemas y los metales nobles en piezas únicas,
-                diseñadas para acompañar y resonar con la historia de quien las
-                porta.
-              </p>
-              <Link href="/autora" className="cta-btn">
-                Conoce a la Autora
-              </Link>
-            </div>
-            </div>
-          </div>
-        </section>
-
         <section className="collection-section" id="coleccion">
           <div className="container">
             <header className="collection-header fade-in">
@@ -146,10 +109,11 @@ export default function HomeClient({ colecciones }: HomeClientProps) {
               ) : (
                 colecciones.map((c) => {
                   const esActiva = c.modo_acceso === "activa";
+                  const esProximamente = c.modo_acceso === "proximamente";
                   const contenido = (
                     <>
                       <div
-                        className="card-media"
+                        className={`card-media${esProximamente ? " card-media--proximamente" : ""}`}
                         style={{
                           backgroundImage: c.foto_url ? `url('${c.foto_url}')` : "none",
                           backgroundColor: c.acento_color_hex ? `${c.acento_color_hex}20` : undefined,
@@ -208,6 +172,43 @@ export default function HomeClient({ colecciones }: HomeClientProps) {
                   return null;
                 })
               )}
+            </div>
+          </div>
+        </section>
+
+        <section className="author-section" id="autora">
+          <div className="container author-grid">
+            <div className="author-image">
+              <Image
+                src="/resources/autora/melany_roman.jpg"
+                alt="Melany Roman, creadora de Romany Melan"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+            <div className="author-content fade-in">
+              <h3 className="section-subtitle">— LA CREADORA</h3>
+              <h2 className="section-title">La Autora &amp; El Origen</h2>
+            <div className="author-text">
+              <p>
+                Soy Melany Roman y cada joya que llevas puesta ha sido imaginada
+                y tejida directamente por mis manos; fundé Romany Melan para
+                rendir tributo a la belleza de lo auténtico y lo hecho a mano.
+              </p>
+              <p>
+                Encuentro en la técnica del micro-macramé mi lenguaje principal:
+                un arte donde cada nudo teje memoria, intención y emoción.
+              </p>
+              <p>
+                A través de este proceso paciente y minucioso, transformo la
+                fibra, las gemas y los metales nobles en piezas únicas,
+                diseñadas para acompañar y resonar con la historia de quien las
+                porta.
+              </p>
+              <Link href="/autora" className="cta-btn">
+                Conoce a la Autora
+              </Link>
+            </div>
             </div>
           </div>
         </section>

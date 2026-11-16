@@ -34,19 +34,48 @@ export async function requireAdmin(req: Request): Promise<AdminAuth> {
   }
 
   const userId = data.user.id;
-  const { data: adminRow, error: adminErr } = await supabaseAdmin
-    .from("admins")
-    .select("id")
-    .eq("id", userId)
-    .maybeSingle();
+  const email = data.user.email?.toLowerCase().trim() ?? null;
 
-  if (adminErr) {
-    console.error("[admin/auth] admins lookup error", adminErr.message);
+  // El rol vive en perfiles.rol: 'admin' puede entrar; el resto no.
+  let rol: string | null = null;
+
+  if (email) {
+    const { data: perfilRow, error: perfilErr } = await supabaseAdmin
+      .from("perfiles")
+      .select("rol")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (perfilErr) {
+      console.error("[admin/auth] perfiles lookup error", perfilErr.message);
+      return { ok: false, response: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
+    }
+
+    if (perfilRow && typeof perfilRow === "object" && "rol" in perfilRow) {
+      rol = String((perfilRow as Record<string, unknown>).rol ?? "").trim() || null;
+    }
+  }
+
+  // Compatibilidad: si no hay rol en perfiles, revisar la tabla admins (legado).
+  if (!rol || rol === "cliente") {
+    const { data: adminRow, error: adminErr } = await supabaseAdmin
+      .from("admins")
+      .select("id")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (adminErr) {
+      console.error("[admin/auth] admins lookup error", adminErr.message);
+    }
+
+    if (!adminRow && rol !== "admin") {
+      return { ok: false, response: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
+    }
+  }
+
+  if (rol !== "admin") {
     return { ok: false, response: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
   }
-  if (!adminRow) {
-    return { ok: false, response: NextResponse.json({ error: "forbidden" }, { status: 403 }) };
-  }
 
-  return { ok: true, userId, email: data.user.email ?? null };
+  return { ok: true, userId, email };
 }

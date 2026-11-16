@@ -78,6 +78,7 @@ export async function POST(req: Request) {
     }
 
     const telefonoMeta = user.user_metadata?.phone;
+    const rol = email === "admin@romanymelan.com" ? "admin" : "cliente";
     const { error: insErr } = await supabaseAdmin.from("perfiles").insert({
       user_id: user.id,
       nombre,
@@ -85,6 +86,7 @@ export async function POST(req: Request) {
       telefono: typeof telefonoMeta === "string" ? telefonoMeta : "",
       miembro: true,
       proveedor,
+      rol,
     });
 
     if (insErr) {
