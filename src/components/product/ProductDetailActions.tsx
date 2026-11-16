@@ -1,15 +1,11 @@
 "use client";
 
-import { formatCOP } from "@/utils/format";
-
 interface ProductDetailActionsProps {
-  price: number;
   whatsappMessage: string;
   onAddToCart: () => void;
 }
 
 export default function ProductDetailActions({
-  price,
   whatsappMessage,
   onAddToCart,
 }: ProductDetailActionsProps) {
@@ -22,23 +18,13 @@ export default function ProductDetailActions({
 
   return (
     <div className="product-detail-actions">
-      {/* Precio con formato limpio */}
-      <div className="product-detail-price">
-        <span className="product-detail-price-current">
-          {formatCOP(price)}
-        </span>
-        <span className="product-detail-price-badge">
-          Envío Gratis Incluido
-        </span>
-      </div>
-
       {/* Botones de Acción (Comprar Web + WhatsApp de Cierre) */}
       <div className="product-detail-buttons">
         <button
           onClick={onAddToCart}
           className="product-detail-btn product-detail-btn--primary"
         >
-          Comprar Ahora (Wompi)
+          Comprar Ahora
         </button>
 
         <button
@@ -51,22 +37,6 @@ export default function ProductDetailActions({
           </svg>
           Dudas o asesoría con la diseñadora por WhatsApp
         </button>
-      </div>
-
-      {/* Badges de Confianza bajo el botón */}
-      <div className="product-detail-trust">
-        <div className="product-detail-trust-item">
-          <p className="product-detail-trust-title">🔒 Pago Seguro</p>
-          <p className="product-detail-trust-desc">Wompi Colombia</p>
-        </div>
-        <div className="product-detail-trust-item">
-          <p className="product-detail-trust-title">📦 Envío Gratis</p>
-          <p className="product-detail-trust-desc">A todo el país</p>
-        </div>
-        <div className="product-detail-trust-item">
-          <p className="product-detail-trust-title">✨ Oro Laminado</p>
-          <p className="product-detail-trust-desc">Garantizado</p>
-        </div>
       </div>
     </div>
   );

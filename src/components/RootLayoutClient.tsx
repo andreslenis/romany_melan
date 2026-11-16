@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 
 import CartDrawer from "@/components/cart/CartDrawer";
 import AnnouncementBar from "@/components/AnnouncementBar";
-import WhatsAppFloatButton from "@/components/WhatsAppFloatButton";
 
 export default function RootLayoutClient({
   children,
@@ -19,7 +18,6 @@ export default function RootLayoutClient({
       {!isCheckout && <AnnouncementBar />}
       {children}
       <CartDrawer />
-      <WhatsAppFloatButton />
     </>
   );
 }
