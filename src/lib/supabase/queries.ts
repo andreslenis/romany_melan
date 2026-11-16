@@ -222,6 +222,30 @@ export async function getProductosActivos(): Promise<ProductoDB[]> {
   }
 }
 
+/** Productos destacados para carrusel home: activos, disponibles, con stock. */
+export async function getProductosDestacados(limit = 8): Promise<ProductoDB[]> {
+  try {
+    const supabase = createClientServer();
+    const { data, error } = await supabase
+      .from("productos")
+      .select("*")
+      .eq("activo", true)
+      .eq("modo_acceso", "disponible")
+      .gt("stock_disponible", 0)
+      .order("nombre")
+      .limit(limit);
+
+    if (error) {
+      console.error("[queries] getProductosDestacados", error.message);
+      return [];
+    }
+    return (data || []) as ProductoDB[];
+  } catch (error) {
+    console.error("[queries] getProductosDestacados", error);
+    return [];
+  }
+}
+
 interface ProductosRelacionadosParams {
   slugActual: string;
   grupoActual?: string | null;

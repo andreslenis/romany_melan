@@ -7,14 +7,17 @@ import { useEffect, useState } from "react";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import Hero from "@/components/home/Hero";
+import ProductCarousel from "@/components/home/ProductCarousel";
 import { usePerfil } from "@/context/ProfileContext";
 import type { Coleccion } from "@/lib/types";
+import type { ProductoDB } from "@/lib/supabase/queries";
 
 interface HomeClientProps {
   colecciones: Coleccion[];
+  productosDestacados: ProductoDB[];
 }
 
-export default function HomeClient({ colecciones }: HomeClientProps) {
+export default function HomeClient({ colecciones, productosDestacados }: HomeClientProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSlug, setModalSlug] = useState("");
   const [modalNombre, setModalNombre] = useState("");
@@ -59,6 +62,7 @@ export default function HomeClient({ colecciones }: HomeClientProps) {
 
       <main id="inicio">
         <Hero />
+        <ProductCarousel productos={productosDestacados} />
 
         <section className="collection-section" id="coleccion">
           <div className="container">

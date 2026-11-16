@@ -33,7 +33,7 @@ export default function Hero() {
               Ver Colección
             </Link>
             <Link 
-              href="/circulo" 
+              href="/crear-perfil" 
               className="w-full sm:w-auto px-8 py-4 border border-[#1A1918] text-[#1A1918] rounded-none hover:bg-[#1A1918] hover:text-white transition-all text-sm font-medium tracking-widest uppercase text-center"
             >
               Círculo Romany Melan
