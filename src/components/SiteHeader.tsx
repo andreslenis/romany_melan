@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -167,7 +168,13 @@ export default function SiteHeader() {
             </button>
           )}
           <Link href="/" className="brand-link" aria-label="Romany Melan - Inicio" onClick={closeMobileMenu}>
-            <span className="brand-name">ROMANY MELAN</span>
+            <Image
+              src="/resources/letras.png"
+              alt="Romany Melan"
+              width={140}
+              height={40}
+              className="brand-logo"
+            />
           </Link>
         </div>
         <div className="nav-right">

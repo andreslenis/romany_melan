@@ -21,17 +21,13 @@ export default function HeroBanner() {
         <div className="hero-banner-text">
           <div className="hero-banner-logo" aria-hidden="true">
             <Image
-              src="/resources/isotipo.png"
-              alt=""
-              width={60}
-              height={60}
-              className="hero-banner-isotipo"
+              src="/resources/logo.png"
+              alt="Romany Melan"
+              className="hero-banner-logo-img"
+              width={320}
+              height={180}
             />
           </div>
-          <p className="hero-banner-brand">ROMANY MELAN</p>
-          <h1 id="hero-title" className="hero-banner-slogan">
-            Joyería de Autor en <span className="hero-banner-accent">Micro-Macramé</span>
-          </h1>
           <Link
             href="/coleccion/soberbia"
             className="hero-banner-cta"
