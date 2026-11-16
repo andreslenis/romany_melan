@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
-import Hero from "@/components/home/Hero";
+import HeroBanner from "@/components/home/HeroBanner";
 import ProductCarousel from "@/components/home/ProductCarousel";
 import { usePerfil } from "@/context/ProfileContext";
 import type { Coleccion } from "@/lib/types";
@@ -61,7 +61,7 @@ export default function HomeClient({ colecciones, productosDestacados }: HomeCli
       <SiteHeader />
 
       <main id="inicio">
-        <Hero />
+        <HeroBanner />
         <ProductCarousel productos={productosDestacados} />
 
         <section className="collection-section" id="coleccion">
@@ -91,6 +91,9 @@ export default function HomeClient({ colecciones, productosDestacados }: HomeCli
                           backgroundColor: c.acento_color_hex ? `${c.acento_color_hex}20` : undefined,
                         }}
                       />
+                      <div className="card-hover-mask">
+                        <span className="card-hover-text">Ver Colección</span>
+                      </div>
                       <div className="card-content">
                         <header className="card-header">
                           <h3 className="card-title">{c.nombre}</h3>
@@ -160,7 +163,7 @@ export default function HomeClient({ colecciones, productosDestacados }: HomeCli
             </div>
             <div className="author-content fade-in">
               <h3 className="section-subtitle">— LA CREADORA</h3>
-              <h2 className="section-title">La Autora &amp; El Origen</h2>
+              <h2 className="section-title">La Autora & El Origen</h2>
             <div className="author-text">
               <p>
                 Soy Melany Roman y cada joya que llevas puesta ha sido imaginada

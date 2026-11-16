@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-import CartDrawer from "@/components/cart/CartDrawer";
 import { CartProvider } from "@/context/CartContext";
 import { ProfileProvider } from "@/context/ProfileContext";
+import RootLayoutClient from "@/components/RootLayoutClient";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
@@ -67,8 +67,7 @@ export default function RootLayout({
       <body className="antialiased">
         <CartProvider>
           <ProfileProvider>
-            {children}
-            <CartDrawer />
+            <RootLayoutClient>{children}</RootLayoutClient>
           </ProfileProvider>
         </CartProvider>
       </body>

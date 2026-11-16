@@ -1135,6 +1135,429 @@ button {
   transform: scale(1.25);
 }
 
+/* Announcement Bar */
+.announcement-bar {
+  background-color: #1A1918;
+  color: #D4AF37;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  line-height: 1.4;
+}
+
+@media (min-width: 768px) {
+  .announcement-bar {
+    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
+  }
+}
+
+/* Hero Banner (Home) */
+.hero-banner {
+  position: relative;
+  width: 100%;
+  min-height: 70vh;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .hero-banner {
+    min-height: 80vh;
+    max-height: 95vh;
+  }
+}
+
+.hero-banner-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero-banner-image {
+  object-fit: cover;
+  transition: transform 0.8s ease;
+}
+
+.hero-banner:hover .hero-banner-image {
+  transform: scale(1.03);
+}
+
+.hero-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(26, 25, 24, 0.6) 0%, rgba(26, 25, 24, 0.2) 50%, transparent 100%);
+  z-index: 1;
+}
+
+.hero-banner-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 clamp(1.5rem, 5vw, 3rem);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hero-banner-text {
+  max-width: 500px;
+  text-align: right;
+  padding: clamp(2rem, 5vw, 4rem) 0;
+}
+
+.hero-banner-logo {
+  display: inline-flex;
+  margin-bottom: 1rem;
+}
+
+.hero-banner-isotipo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+@media (min-width: 768px) {
+  .hero-banner-isotipo {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+.hero-banner-brand {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
+}
+
+.hero-banner-slogan {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.75rem, 5vw, 3rem);
+  font-weight: 400;
+  line-height: 1.15;
+  color: #FFFFFF;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.hero-banner-accent {
+  font-style: italic;
+  color: #D4AF37;
+}
+
+.hero-banner-cta {
+  display: inline-block;
+  padding: 1rem 2rem;
+  background-color: #FFFFFF;
+  color: #1A1918;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-radius: 999px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px -8px rgba(0, 0, 0, 0.3);
+}
+
+.hero-banner-cta:hover {
+  background-color: #F5F0EB;
+  color: #1A1918;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px -12px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 767px) {
+  .hero-banner {
+    min-height: 60vh;
+    max-height: 80vh;
+  }
+  
+  .hero-banner-content {
+    justify-content: center;
+  }
+  
+  .hero-banner-text {
+    text-align: center;
+    max-width: 100%;
+  }
+  
+  .hero-banner-overlay {
+    background: linear-gradient(180deg, rgba(26, 25, 24, 0.5) 0%, rgba(26, 25, 24, 0.1) 50%, transparent 100%);
+  }
+}
+
+/* SiteHeader - Brand Link */
+.brand-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text);
+  transition: color 0.3s ease;
+}
+
+.brand-link:hover .brand-name {
+  color: var(--color-accent);
+}
+
+/* SiteHeader - Hamburger Button */
+.hamburger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: transparent;
+  color: var(--color-text);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 101;
+}
+
+.hamburger-btn:hover {
+  background-color: rgba(17, 17, 17, 0.05);
+  border-color: rgba(17, 17, 17, 0.1);
+}
+
+@media (min-width: 768px) {
+  .hamburger-btn {
+    display: none;
+  }
+}
+
+/* SiteHeader - Mobile Menu */
+.mobile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(320px, 100vw);
+  background-color: #FFFFFF;
+  z-index: 100;
+  transform: translateX(100%);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: -20px 0 60px -20px rgba(17, 17, 17, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-menu.open {
+  transform: translateX(0);
+}
+
+.mobile-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(17, 17, 17, 0.4);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 99;
+}
+
+.mobile-menu-backdrop.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.mobile-menu-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: clamp(2rem, 5vw, 3rem) clamp(1.5rem, 4vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.mobile-menu .nav-links--mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mobile-menu .nav-link {
+  font-size: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(17, 17, 17, 0.06);
+}
+
+.mobile-menu-divider {
+  height: 1px;
+  background-color: rgba(17, 17, 17, 0.1);
+  margin: 0.5rem 0;
+}
+
+.mobile-menu-user {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobile-menu-user .header-user-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-start;
+}
+
+/* SiteHeader - Header User Actions (Desktop) */
+.header-user-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Nav User Desktop */
+.nav-user-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .nav-user-desktop {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: clamp(1rem, 2vw, 2rem);
+  }
+}
+
+/* Collection Card Hover Mask */
+.card {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-hover-mask {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(26, 25, 24, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  z-index: 2;
+}
+
+@media (hover: hover) {
+  .card:hover .card-hover-mask {
+    opacity: 1;
+  }
+}
+
+.card-hover-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #FFFFFF;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  transform: translateY(0.5rem);
+  transition: transform 0.35s ease, background-color 0.35s ease, border-color 0.35s ease;
+}
+
+@media (hover: hover) {
+  .card:hover .card-hover-text {
+    transform: translateY(0);
+  }
+}
+
+.card-hover-text:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Proximamente cards - no hover mask */
+.card-media--proximamente + .card-hover-mask {
+  display: none;
+}
+
+/* WhatsApp Float Button */
+.whatsapp-float-btn {
+  position: fixed;
+  bottom: clamp(1.5rem, 3vw, 2rem);
+  right: clamp(1.5rem, 3vw, 2rem);
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background-color: #25D366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px -8px rgba(37, 211, 102, 0.5), 0 0 0 4px rgba(37, 211, 102, 0.15);
+  z-index: 9999;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: #FFFFFF;
+}
+
+.whatsapp-float-btn:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 12px 32px -12px rgba(37, 211, 102, 0.6), 0 0 0 6px rgba(37, 211, 102, 0.2);
+  color: #FFFFFF;
+}
+
+.whatsapp-float-btn:focus-visible {
+  outline: 2px solid #1A1918;
+  outline-offset: 3px;
+}
+
+.whatsapp-pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #25D366;
+  opacity: 0;
+  animation: whatsapp-pulse 2s ease-out infinite;
+}
+
+@keyframes whatsapp-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .whatsapp-float-btn {
+    width: 3rem;
+    height: 3rem;
+    bottom: 1rem;
+    right: 1rem;
+  }
+}
+
 /* PDP */
 .pdp-section {
   padding: clamp(3rem, 8vw, 6rem) 0;
