@@ -13,41 +13,37 @@ interface ProductCarouselProps {
 }
 
 export default function ProductCarousel({ productos }: ProductCarouselProps) {
-  const { addItem, open } = useCart();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const [itemsPerView, setItemsPerView] = useState(1);
   const carouselRef = useRef<HTMLDivElement>(null);
-  const itemsPerView = typeof window !== "undefined" && window.innerWidth >= 1024 ? 4 : 
-                       typeof window !== "undefined" && window.innerWidth >= 768 ? 3 : 1;
-  const maxIndex = Math.max(0, productos.length - itemsPerView);
+  const { addItem, open } = useCart();
 
   useEffect(() => {
+    setMounted(true);
     const handleResize = () => {
       const newItemsPerView = window.innerWidth >= 1024 ? 4 : window.innerWidth >= 768 ? 3 : 1;
+      setItemsPerView(newItemsPerView);
       setCurrentIndex(prev => Math.min(prev, Math.max(0, productos.length - newItemsPerView)));
     };
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [productos.length]);
+
+  const maxIndex = Math.max(0, productos.length - itemsPerView);
 
   const scrollToIndex = useCallback((index: number) => {
     const clampedIndex = Math.max(0, Math.min(index, maxIndex));
     setCurrentIndex(clampedIndex);
     carouselRef.current?.scrollTo({
-      left: carouselRef.current.scrollWidth * (clampedIndex / maxIndex) || 0,
+      left: carouselRef.current.scrollWidth * (clampedIndex / (maxIndex || 1)) || 0,
       behavior: "smooth",
     });
   }, [maxIndex]);
 
   const handlePrev = () => scrollToIndex(currentIndex - 1);
   const handleNext = () => scrollToIndex(currentIndex + 1);
-
-  const getItemWidth = () => {
-    if (productos.length === 0) return "100%";
-    if (typeof window === "undefined") return "25%";
-    if (window.innerWidth >= 1024) return "25%";
-    if (window.innerWidth >= 768) return "33.33%";
-    return "100%";
-  };
 
   const handleAddToCart = (producto: ProductoDB) => {
     const precioBase = Number(producto.precio_cop ?? 0);
@@ -73,6 +69,39 @@ export default function ProductCarousel({ productos }: ProductCarouselProps) {
     });
     open();
   };
+
+  // Don't render until mounted to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <section className="products-carousel-section" aria-label="Productos destacados">
+        <div className="container">
+          <header className="carousel-header">
+            <h2 className="carousel-title">Destacados</h2>
+            <p className="carousel-subtitle">Nuestras piezas más deseadas</p>
+          </header>
+          <div className="carousel-wrapper">
+            <div className="carousel-track" style={{ display: "flex", gap: "1.5rem", overflowX: "auto" }}>
+              {productos.slice(0, 4).map((producto) => (
+                <article key={producto.id} className="carousel-card" style={{ flex: "0 0 25%", minWidth: "260px" }}>
+                  <Link href={`/producto/${producto.slug}`} className="carousel-card-link">
+                    <div className="carousel-card-media">
+                      <div className="carousel-card-placeholder" />
+                    </div>
+                    <div className="carousel-card-content">
+                      <h3 className="carousel-card-title">{producto.nombre}</h3>
+                      <div className="carousel-card-price">
+                        <span className="price-current">{formatCOP(Number(producto.precio_cop ?? 0))}</span>
+                      </div>
+                    </div>
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (productos.length === 0) return null;
 
@@ -114,7 +143,7 @@ export default function ProductCarousel({ productos }: ProductCarouselProps) {
                   className="carousel-card"
                   role="listitem"
                   style={{
-                    flex: `0 0 ${getItemWidth()}`,
+                    flex: `0 0 ${100 / itemsPerView}%`,
                     minWidth: "260px",
                     scrollSnapAlign: "start",
                   }}
