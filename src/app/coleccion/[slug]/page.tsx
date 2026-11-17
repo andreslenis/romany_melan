@@ -9,7 +9,7 @@ import {
   type ProductoDB,
 } from "@/lib/supabase/queries";
 
-export const revalidate = 3600;
+export const revalidate = 60;
 
 interface CollectionPageProps {
   params: Promise<{ slug: string }>;
