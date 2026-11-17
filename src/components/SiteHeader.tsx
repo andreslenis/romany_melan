@@ -30,6 +30,14 @@ const ICON_USER_PLUS = (
   </svg>
 );
 
+const ICON_CART = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 4H5L6.68 14.39C6.77 15.05 7.25 15.57 7.89 15.73L16.16 18.06C16.87 18.26 17.61 17.9 17.89 17.23L20 10H6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="9" cy="21" r="1" fill="currentColor" />
+    <circle cx="17" cy="21" r="1" fill="currentColor" />
+  </svg>
+);
+
 const ICON_HAMBURGER = (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="3" y1="6" x2="21" y2="6" />
@@ -98,7 +106,7 @@ export default function SiteHeader() {
     </ul>
   );
 
-  const renderUserActions = () => (
+  const renderDesktopUserActions = () => (
     <div className="header-user-actions">
       {perfil ? (
         <Link
@@ -138,14 +146,36 @@ export default function SiteHeader() {
         aria-label="Abrir carrito de compras"
         title="Carrito"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 4H5L6.68 14.39C6.77 15.05 7.25 15.57 7.89 15.73L16.16 18.06C16.87 18.26 17.61 17.9 17.89 17.23L20 10H6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx="9" cy="21" r="1" fill="currentColor" />
-          <circle cx="17" cy="21" r="1" fill="currentColor" />
-        </svg>
+        {ICON_CART}
         {hydrated && count > 0 && (
           <span className="cart-count">{count}</span>
         )}
+      </button>
+    </div>
+  );
+
+  const renderMobileUserActions = () => (
+    <div className="mobile-menu-user-actions">
+      {perfil ? (
+        <Link className="mobile-user-btn" href="/mi-perfil" onClick={closeMobileMenu}>
+          <span className="mobile-user-btn-icon">{ICON_USER}</span>
+          <span>Mi perfil</span>
+        </Link>
+      ) : (
+        <>
+          <Link className="mobile-user-btn" href="/inicio-sesion" onClick={closeMobileMenu}>
+            <span className="mobile-user-btn-icon">{ICON_USER}</span>
+            <span>Iniciar sesión</span>
+          </Link>
+          <Link className="mobile-user-btn" href="/crear-perfil" onClick={closeMobileMenu}>
+            <span className="mobile-user-btn-icon">{ICON_USER_PLUS}</span>
+            <span>Crear perfil</span>
+          </Link>
+        </>
+      )}
+      <button className="mobile-user-btn mobile-cart-btn" onClick={open} aria-label="Carrito">
+        <span className="mobile-user-btn-icon">{ICON_CART}</span>
+        <span>Carrito {hydrated && count > 0 && `(${count})`}</span>
       </button>
     </div>
   );
@@ -182,7 +212,7 @@ export default function SiteHeader() {
             {renderDesktopLinks()}
           </div>
           <div className="nav-user-desktop">
-            {renderUserActions()}
+            {renderDesktopUserActions()}
           </div>
           <button
             className="hamburger-btn"
@@ -203,10 +233,7 @@ export default function SiteHeader() {
       >
         <div className="mobile-menu-content">
           {renderMobileLinks()}
-          <div className="mobile-menu-divider" />
-          <div className="mobile-menu-user">
-            {renderUserActions()}
-          </div>
+          {renderMobileUserActions()}
         </div>
       </div>
       <div

@@ -309,22 +309,24 @@ export default function ProductoClient({
 
       <main>
         <section className="pdp-section">
-          <div className="container pdp-grid-single">
+          <div className="container pdp-grid-responsive">
             
-            {/* 1. Product Name */}
-            <header className="pdp-header">
-              <h1 className="pdp-title">{producto.nombre}</h1>
-              <div className="pdp-price-row">
-                {tienePromo && (
-                  <p className="pdp-price-old">{precioRegularFormato}</p>
-                )}
-                <p className="pdp-price">{precioFormato}</p>
-                <span className="pdp-price-badge">Envío gratis a Colombia</span>
-              </div>
-            </header>
+            {/* LEFT COLUMN: Gallery */}
+            <div className="pdp-gallery-column">
+              {/* Mobile Header - only visible on mobile */}
+              <header className="pdp-header">
+                <h1 className="pdp-title">{producto.nombre}</h1>
+                <div className="pdp-price-row">
+                  {tienePromo && (
+                    <p className="pdp-price-old">{precioRegularFormato}</p>
+                  )}
+                  <p className="pdp-price">{precioFormato}</p>
+                  <span className="pdp-price-badge">Envío gratis a Colombia</span>
+                </div>
+              </header>
 
-            {/* 2. Photos/Gallery - Full Width */}
-            <div className="pdp-gallery-full">
+              {/* 2. Photos/Gallery */}
+              <div className="pdp-gallery-full">
               <div className="pdp-gallery-main" style={{ position: "relative" }}>
                 <button
                   type="button"
@@ -438,10 +440,25 @@ export default function ProductoClient({
                   ))}
                 </div>
               )}
+</div>
             </div>
+            {/* End Gallery Column */}
 
-            {/* 3. Technical Specs - Always Visible (no accordion) */}
-            <div className="pdp-specs-full">
+            {/* RIGHT COLUMN: Product Info */}
+            <div className="pdp-info-column">
+              {/* 1. Product Name (also shown on mobile above gallery) */}
+              <header className="pdp-header pdp-header--desktop">
+                <h1 className="pdp-title">{producto.nombre}</h1>
+                <div className="pdp-price-row">
+                  {tienePromo && (
+                    <p className="pdp-price-old">{precioRegularFormato}</p>
+                  )}
+                  <p className="pdp-price">{precioFormato}</p>
+                  <span className="pdp-price-badge">Envío gratis a Colombia</span>
+                </div>
+              </header>
+
+              {/* 3. Technical Specs - Always Visible (no accordion) */}
               <h3 className="pdp-block-title">Especificaciones técnicas</h3>
               <div className="pdp-specs-content">
                 <ul>
