@@ -181,50 +181,52 @@ export default function SiteHeader() {
   );
 
   return (
-    <header className={`header ${scrolled ? "scrolled" : ""}`} id="header">
-      <nav className="nav">
-        <div className="nav-left">
-          {!esInicio && (
+    <>
+      <header className={`header ${scrolled ? "scrolled" : ""}`} id="header">
+        <nav className="nav">
+          <div className="nav-left">
+            {!esInicio && (
+              <button
+                className="icon-btn nav-back"
+                onClick={() => router.back()}
+                aria-label="Volver atrás"
+                title="Volver atrás"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M15 5L8 12L15 19" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M8 12H20" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
+            <Link href="/" className="brand-link" aria-label="Romany Melan - Inicio" onClick={closeMobileMenu}>
+              <Image
+                src="/resources/letras.png"
+                alt="Romany Melan"
+                width={140}
+                height={40}
+                className="brand-logo"
+              />
+            </Link>
+          </div>
+          <div className="nav-right">
+            <div className="nav-links-desktop">
+              {renderDesktopLinks()}
+            </div>
+            <div className="nav-user-desktop">
+              {renderDesktopUserActions()}
+            </div>
             <button
-              className="icon-btn nav-back"
-              onClick={() => router.back()}
-              aria-label="Volver atrás"
-              title="Volver atrás"
+              className="hamburger-btn"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
+              aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15 5L8 12L15 19" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M8 12H20" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
+              {mobileMenuOpen ? ICON_CLOSE : ICON_HAMBURGER}
             </button>
-          )}
-          <Link href="/" className="brand-link" aria-label="Romany Melan - Inicio" onClick={closeMobileMenu}>
-            <Image
-              src="/resources/letras.png"
-              alt="Romany Melan"
-              width={140}
-              height={40}
-              className="brand-logo"
-            />
-          </Link>
-        </div>
-        <div className="nav-right">
-          <div className="nav-links-desktop">
-            {renderDesktopLinks()}
           </div>
-          <div className="nav-user-desktop">
-            {renderDesktopUserActions()}
-          </div>
-          <button
-            className="hamburger-btn"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-expanded={mobileMenuOpen}
-            aria-controls="mobile-menu"
-            aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
-          >
-            {mobileMenuOpen ? ICON_CLOSE : ICON_HAMBURGER}
-          </button>
-        </div>
-      </nav>
+        </nav>
+      </header>
       <div
         id="mobile-menu"
         className={`mobile-menu ${mobileMenuOpen ? "open" : ""}`}
@@ -241,6 +243,6 @@ export default function SiteHeader() {
         onClick={closeMobileMenu}
         aria-hidden="true"
       />
-    </header>
+    </>
   );
 }
