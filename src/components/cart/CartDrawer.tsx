@@ -26,19 +26,22 @@ export default function CartDrawer() {
   useEffect(() => {
     if (!isOpen) return;
 
+    // Close mobile menu when cart opens
+    const event = new CustomEvent("romany:close-mobile-menu");
+    window.dispatchEvent(event);
+
     void syncPrices();
 
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
     };
 
-    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", handleKey);
     panelRef.current?.focus();
 
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = "";
       document.removeEventListener("keydown", handleKey);
     };
   }, [isOpen, close, syncPrices]);

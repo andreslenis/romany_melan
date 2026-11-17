@@ -99,6 +99,17 @@ export default function AdminDashboard() {
               </div>
               <span className="admin-module-arrow">→</span>
             </Link>
+
+            <Link href="/admin/embajadores" className="admin-module admin-module--embajadores">
+              <div className="admin-module-seal" aria-hidden="true">✦</div>
+              <div className="admin-module-body">
+                <h2 className="admin-module-title">Gestor de Embajadores</h2>
+                <p className="admin-module-desc">
+                  Administrar embajadores, códigos de descuento y comisiones.
+                </p>
+              </div>
+              <span className="admin-module-arrow">→</span>
+            </Link>
           </div>
 
           <div className="admin-actions">

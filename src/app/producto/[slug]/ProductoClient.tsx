@@ -48,6 +48,7 @@ export default function ProductoClient({
   const [emailEspera, setEmailEspera] = useState("");
   const [esperaRegistrada, setEsperaRegistrada] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [mostrarSoloColor, setMostrarSoloColor] = useState(false);
 
   const getImgsPorColor = (p: DBProd | null): Record<string, string> => {
     if (!p) return {};
@@ -74,7 +75,6 @@ export default function ProductoClient({
           return parsed.filter((c): c is string => typeof c === "string" && c.trim().length > 0).map((c) => c.trim());
         }
       } catch {
-        // not JSON
       }
       return raw.split(",").map((c) => c.trim()).filter(Boolean);
     }
@@ -100,6 +100,8 @@ export default function ProductoClient({
     const prodLinea = String(productoBase.linea || "").toLowerCase() === "singular" ? "singular" : "origen";
     setLineaActiva(prodLinea);
     setSelectedSize(null);
+    setColorHilo(null);
+    setMostrarSoloColor(false);
   }, [productoBase]);
 
   const varianteActual = (() => {
@@ -165,7 +167,7 @@ export default function ProductoClient({
 
   useEffect(() => {
     setCurrentImageIndex(0);
-  }, [slugActivo, colorHilo]);
+  }, [slugActivo, colorHilo, mostrarSoloColor]);
 
   useEffect(() => {
     setSelectedSize(null);
@@ -246,6 +248,10 @@ export default function ProductoClient({
   const colorActivoValido = !esSingular && colorHilo && typeof imgsPorColor[colorHilo] === "string" && imgsPorColor[colorHilo].length > 0 ? colorHilo : null;
 
   const allImages = (() => {
+    if (mostrarSoloColor && colorActivoValido) {
+      const colorImg = imgsPorColor[colorActivoValido];
+      return colorImg ? [colorImg] : [];
+    }
     if (colorActivoValido) {
       const colorImg = imgsPorColor[colorActivoValido];
       const base = Array.isArray(producto.imagenes) && producto.imagenes.length > 0
@@ -303,6 +309,17 @@ export default function ProductoClient({
     setEsperaRegistrada(true);
   };
 
+  const handleColorSelect = (slug: string) => {
+    setColorHilo(slug);
+    setMostrarSoloColor(true);
+    setCurrentImageIndex(0);
+  };
+
+  const handleVerOriginales = () => {
+    setMostrarSoloColor(false);
+    setCurrentImageIndex(0);
+  };
+
   return (
     <>
       <SiteHeader />
@@ -313,142 +330,148 @@ export default function ProductoClient({
             
             {/* LEFT COLUMN: Gallery */}
             <div className="pdp-gallery-column">
-              {/* Mobile Header - only visible on mobile */}
-              <header className="pdp-header">
+              {/* 1. Product Name */}
+              <header className="pdp-header pdp-header--desktop">
                 <h1 className="pdp-title">{producto.nombre}</h1>
-                <div className="pdp-price-row">
-                  {tienePromo && (
-                    <p className="pdp-price-old">{precioRegularFormato}</p>
-                  )}
-                  <p className="pdp-price">{precioFormato}</p>
-                  <span className="pdp-price-badge">Envío gratis a Colombia</span>
-                </div>
               </header>
 
-              {/* 2. Photos/Gallery */}
+              {/* 2. Main Photo / Gallery */}
               <div className="pdp-gallery-full">
-              <div className="pdp-gallery-main" style={{ position: "relative" }}>
-                <button
-                  type="button"
-                  className="pdp-gallery-image pdp-gallery-image--zoom"
-                  onClick={() => {
-                    setZoomScale(1);
-                    setZoomOpen(true);
-                  }}
-                  onTouchEnd={(e) => {
-                    const now = Date.now();
-                    if (now - lastTapRef.current < 300) {
-                      e.preventDefault();
+                <div className="pdp-gallery-main" style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    className="pdp-gallery-image pdp-gallery-image--zoom"
+                    onClick={() => {
                       setZoomScale(1);
                       setZoomOpen(true);
-                    }
-                    lastTapRef.current = now;
-                  }}
-                  aria-label="Ampliar imagen"
-                >
-                  <Image
-                    src={allImages[currentImageIndex] || imagenParaCarrito}
-                    alt={color ? `${nombreParaAlt} · hilo ${color.nombre.toLowerCase()}` : nombreParaAlt}
-                    unoptimized
-                    fill
-                    priority
-                    style={{ objectFit: "cover" }}
-                    sizes="100vw"
-                  />
-                </button>
+                    }}
+                    onTouchEnd={(e) => {
+                      const now = Date.now();
+                      if (now - lastTapRef.current < 300) {
+                        e.preventDefault();
+                        setZoomScale(1);
+                        setZoomOpen(true);
+                      }
+                      lastTapRef.current = now;
+                    }}
+                    aria-label="Ampliar imagen"
+                  >
+                    <Image
+                      src={allImages[currentImageIndex] || imagenParaCarrito}
+                      alt={color ? `${nombreParaAlt} · hilo ${color.nombre.toLowerCase()}` : nombreParaAlt}
+                      unoptimized
+                      fill
+                      priority
+                      style={{ objectFit: "cover" }}
+                      sizes="100vw"
+                    />
+                  </button>
+                  {allImages.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
+                        }}
+                        style={{
+                          position: "absolute",
+                          left: "1rem",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: "2.5rem",
+                          height: "2.5rem",
+                          borderRadius: "50%",
+                          background: "rgba(255,255,255,0.9)",
+                          border: "1px solid rgba(0,0,0,0.1)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          zIndex: 2,
+                          cursor: "pointer",
+                        }}
+                        aria-label="Imagen anterior"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
+                        }}
+                        style={{
+                          position: "absolute",
+                          right: "1rem",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: "2.5rem",
+                          height: "2.5rem",
+                          borderRadius: "50%",
+                          background: "rgba(255,255,255,0.9)",
+                          border: "1px solid rgba(0,0,0,0.1)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          zIndex: 2,
+                          cursor: "pointer",
+                        }}
+                        aria-label="Imagen siguiente"
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* 3. More Photos / Thumbnails */}
                 {allImages.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentImageIndex((prev) => (prev === 0 ? allImages.length - 1 : prev - 1));
-                      }}
-                      style={{
-                        position: "absolute",
-                        left: "1rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        width: "2.5rem",
-                        height: "2.5rem",
-                        borderRadius: "50%",
-                        background: "rgba(255,255,255,0.9)",
-                        border: "1px solid rgba(0,0,0,0.1)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 2,
-                        cursor: "pointer",
-                      }}
-                      aria-label="Imagen anterior"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentImageIndex((prev) => (prev === allImages.length - 1 ? 0 : prev + 1));
-                      }}
-                      style={{
-                        position: "absolute",
-                        right: "1rem",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        width: "2.5rem",
-                        height: "2.5rem",
-                        borderRadius: "50%",
-                        background: "rgba(255,255,255,0.9)",
-                        border: "1px solid rgba(0,0,0,0.1)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 2,
-                        cursor: "pointer",
-                      }}
-                      aria-label="Imagen siguiente"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                      </svg>
-                    </button>
-                  </>
+                  <div className="pdp-gallery-thumbs">
+                    {allImages.map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`pdp-thumb ${idx === currentImageIndex ? "active" : ""}`}
+                        aria-label={`Ver imagen ${idx + 1}`}
+                        aria-pressed={idx === currentImageIndex}
+                        onClick={() => setCurrentImageIndex(idx)}
+                      >
+                        <div className="pdp-thumb-image">
+                          <Image
+                            src={img}
+                            alt={`${nombreParaAlt} · imagen ${idx + 1}`}
+                            fill
+                            style={{ objectFit: "cover" }}
+                          />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Ver originales button - shown when a color is selected and showing only that color */}
+                {mostrarSoloColor && colorActivoValido && (
+                  <button
+                    type="button"
+                    className="pdp-ver-originales-btn"
+                    onClick={handleVerOriginales}
+                    aria-label="Ver todas las fotos originales"
+                  >
+                    Ver todas las fotos
+                  </button>
                 )}
               </div>
-              {allImages.length > 1 && (
-                <div className="pdp-gallery-thumbs">
-                  {allImages.map((img, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      className={`pdp-thumb ${idx === currentImageIndex ? "active" : ""}`}
-                      aria-label={`Ver imagen ${idx + 1}`}
-                      aria-pressed={idx === currentImageIndex}
-                      onClick={() => setCurrentImageIndex(idx)}
-                    >
-                      <div className="pdp-thumb-image">
-                        <Image
-                          src={img}
-                          alt={`${nombreParaAlt} · imagen ${idx + 1}`}
-                          fill
-                          style={{ objectFit: "cover" }}
-                        />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-</div>
             </div>
             {/* End Gallery Column */}
 
             {/* RIGHT COLUMN: Product Info */}
             <div className="pdp-info-column">
-              {/* 1. Product Name (also shown on mobile above gallery) */}
-              <header className="pdp-header pdp-header--desktop">
-                <h1 className="pdp-title">{producto.nombre}</h1>
+              {/* 4. Price */}
+              <div className="pdp-price-block">
                 <div className="pdp-price-row">
                   {tienePromo && (
                     <p className="pdp-price-old">{precioRegularFormato}</p>
@@ -456,9 +479,46 @@ export default function ProductoClient({
                   <p className="pdp-price">{precioFormato}</p>
                   <span className="pdp-price-badge">Envío gratis a Colombia</span>
                 </div>
-              </header>
+              </div>
 
-              {/* 3. Technical Specs - Always Visible (no accordion) */}
+              {/* 5. Badge (already included in price block above as pdp-price-badge) */}
+              {/* Note: "Envío gratis a Colombia" is the badge */}
+
+              {/* 6. Color selector (Origen line) */}
+              {!esSingular && coloresDisponibles.length > 0 && (
+                <div className="pdp-color-block">
+                  <h3 className="pdp-block-title">Color del hilo</h3>
+                  <p className="pdp-color-intro">Elige el color de hilo que te acompaña.</p>
+                  <div className="color-swatches">
+                    {coloresDisponibles.map((opcion) => (
+                      <button
+                        key={opcion.slug}
+                        type="button"
+                        className={`color-swatch ${colorHilo === opcion.slug ? "active" : ""}`}
+                        style={{ backgroundColor: opcion.hex }}
+                        title={opcion.nombre}
+                        aria-label={`Hilo ${opcion.nombre}`}
+                        aria-pressed={colorHilo === opcion.slug}
+                        onClick={() => handleColorSelect(opcion.slug)}
+                      />
+                    ))}
+                  </div>
+                  {color && <p className="color-selected">Hilo {color.nombre}</p>}
+                </div>
+              )}
+
+              {/* Fixed color (Singular line) */}
+              {esSingular && color && (
+                <div className="pdp-color-fijo">
+                  <h3 className="pdp-block-title">Color del hilo</h3>
+                  <p className="pdp-color-fijo-text">
+                    <span className="color-swatch color-swatch--static" style={{ backgroundColor: color.hex }} aria-hidden="true" />
+                    {color.nombre} · Fijo según el diseño de la autora
+                  </p>
+                </div>
+              )}
+
+              {/* 7. Technical Specs - Always Visible (no accordion) */}
               <h3 className="pdp-block-title">Especificaciones técnicas</h3>
               <div className="pdp-specs-content">
                 <ul>
@@ -474,279 +534,245 @@ export default function ProductoClient({
                 </ul>
               </div>
               {producto.material && <p className="pdp-line">{producto.material}</p>}
-            </div>
 
-            {/* 4. Description - Accordion */}
-            {descripcionCorta && (
+              {/* 8. Description - Accordion */}
+              {descripcionCorta && (
+                <div className="pdp-accordion">
+                  <div className="pdp-accordion-item">
+                    <details>
+                      <summary>Descripción</summary>
+                      <div className="pdp-accordion-content">
+                        <p>{descripcionCorta}</p>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+              )}
+
+              {/* 9. Narrativa / Historia - Accordion */}
+              {historia && (
+                <div className="pdp-accordion pdp-accordion--header">
+                  <div className="pdp-accordion-item">
+                    <details>
+                      <summary>NARRATIVA / HISTORIA</summary>
+                      <div className="pdp-accordion-content">
+                        <p>{historia}</p>
+                      </div>
+                    </details>
+                  </div>
+                </div>
+              )}
+
+              {/* 10. Talla */}
+              {Array.isArray(producto.tallas) && producto.tallas.length > 0 && (
+                <div className="pdp-size-block">
+                  <h3 className="pdp-block-title">Talla</h3>
+                  <div className="pdp-size-options">
+                    <select
+                      className="pdp-size-select"
+                      value={selectedSize || ""}
+                      onChange={(e) => setSelectedSize(e.target.value || null)}
+                    >
+                      <option value="">Seleccione talla</option>
+                      {producto.tallas.map((t: string | number) => (
+                        <option key={String(t)} value={String(t)}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* 11. Observaciones */}
+              <div className="pdp-observaciones">
+                <h3 className="pdp-block-title" style={{ fontWeight: 600 }}>Observaciones de la pieza</h3>
+                <p className="pdp-color-intro">¿Necesitas una talla diferente o un ajuste especial? Cuéntanoslo y lo realizamos a tus necesidades.</p>
+                <textarea
+                  className="form-input form-textarea"
+                  rows={3}
+                  value={observaciones}
+                  onChange={(e) => setObservaciones(e.target.value)}
+                  placeholder="Ej: talla 5 1/2, empaque para regalo,..."
+                />
+              </div>
+
+              {/* 12-13. Action Buttons */}
+              <div className="pdp-actions">
+                {producto.modoAcceso === "disponible" ? (
+                  <ProductDetailActions
+                    whatsappMessage={whatsappMessage}
+                    onAddToCart={handleAddToCart}
+                  />
+                ) : producto.modoAcceso === "circulo" ? (
+                  <>
+                    <Link className="pdp-add-btn pdp-add-btn--outline" href="/mi-perfil">
+                      Solicitar Acceso al Círculo
+                    </Link>
+                    <p className="pdp-access-note">Esta obra no está en stock abierto. Crea tu perfil en el Círculo para solicitar el acceso y ser notificado cuando haya una edición disponible.</p>
+                  </>
+                ) : !esSingular ? (
+                  <ProductDetailActions
+                    whatsappMessage={whatsappMessage}
+                    onAddToCart={handleAddToCart}
+                  />
+                ) : esperaRegistrada ? (
+                  <p className="pdp-waitlist-done">
+                    Te anotamos en la lista de espera de <strong>{producto.nombre}</strong>. Te avisaremos por correo cuando abramos la próxima edición.
+                  </p>
+                ) : (
+                  <form className="pdp-waitlist" onSubmit={handleEspera}>
+                    <label className="form-field">
+                      <span className="form-label">Correo para la lista de espera</span>
+                      <input
+                        className="form-input"
+                        type="email"
+                        value={emailEspera}
+                        onChange={(e) => setEmailEspera(e.target.value)}
+                        placeholder="tu@email.com"
+                        required
+                      />
+                    </label>
+                    <button type="submit" className="pdp-add-btn">
+                      Unirme a la Lista de Espera
+                    </button>
+                    <p className="pdp-access-note">Obra invariable de edición limitada. Guardamos tu lugar en la fila y te escribimos en cuanto haya una unidad.</p>
+                  </form>
+                )}
+              </div>
+
+              {/* 14. Trust Badges (moved from ProductDetailActions) */}
+              <div className="pdp-trust-badges">
+                <div className="pdp-trust-item">
+                  <p className="pdp-trust-title">🔒 Pago Seguro</p>
+                  <p className="pdp-trust-desc">Wompi Colombia</p>
+                </div>
+                <div className="pdp-trust-item">
+                  <p className="pdp-trust-title">📦 Envío Gratis</p>
+                  <p className="pdp-trust-desc">A todo el país</p>
+                </div>
+                <div className="pdp-trust-item">
+                  <p className="pdp-trust-title">✨ Oro Laminado</p>
+                  <p className="pdp-trust-desc">Garantizado</p>
+                </div>
+              </div>
+
+              {/* 15. Return Policy Link */}
+              <p className="pdp-access-note pdp-policy-note">
+                {NOTA_PRODUCTO.antes}
+                <Link href={PAGINA_POLITICA.href}>{NOTA_PRODUCTO.enlace}</Link>
+                {NOTA_PRODUCTO.despues}
+              </p>
+
+              {/* 16. Share Section */}
+              <div className="pdp-share" style={{ marginTop: "1.5rem" }}>
+                <p className="pdp-share-note">Comparte este articulo con quien desees</p>
+                <button
+                  type="button"
+                  className="pdp-share-btn pdp-share-btn--whatsapp"
+                  onClick={handleShareWhatsApp}
+                  aria-label="Compartir por WhatsApp"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 3.5A14 14 0 0 1 21 12c0 4.7-2.8 8.8-6.9 10.4-.5.2-1 .1-1.3-.3a12 12 0 0 1-22-13.7c.2-.5.7-1 1.2-1.3A14 14 0 0 1 17.5 3.5z" /><path d="M12 9v4l2.5 2" /></svg>
+                  <span>WhatsApp</span>
+                </button>
+                <button
+                  type="button"
+                  className="pdp-share-btn pdp-share-btn--copy"
+                  onClick={handleShareCopy}
+                  aria-label="Copiar enlace del producto"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                  <span>{shareCopied ? "¡Copiado!" : "Copiar enlace"}</span>
+                </button>
+              </div>
+
+              {/* 17. Cuida de tus joyas - Accordion */}
               <div className="pdp-accordion">
                 <div className="pdp-accordion-item">
                   <details>
-                    <summary>Descripción</summary>
+                    <summary>CUIDA DE TUS JOYAS</summary>
                     <div className="pdp-accordion-content">
-                      <p>{descripcionCorta}</p>
+                      <p>Desde Romany Melan te aconsejamos que hagas un uso adecuado de tus joyas. Son productos que aunque sean duraderos han de ser almacenados de forma independiente evitando el roce y a ser posible en bolsas individuales. No uses productos abrasivos para su limpieza. Recuerda tratarlas con cariño y mimo.</p>
                     </div>
                   </details>
                 </div>
               </div>
-            )}
 
-            {/* 5. Narrativa / Historia - Accordion */}
-            {historia && (
-              <div className="pdp-accordion pdp-accordion--header">
+              {/* 18. Cómo medir tu muñeca - Accordion */}
+              <div className="pdp-accordion">
                 <div className="pdp-accordion-item">
                   <details>
-                    <summary>NARRATIVA / HISTORIA</summary>
+                    <summary>CÓMO MEDIR TU MUÑECA</summary>
                     <div className="pdp-accordion-content">
-                      <p>{historia}</p>
+                      <p>Paso 1- Envuelve tu muñeca con una cinta por la parte más estrecha.</p>
+                      <p>Paso 2- Coloca la cinta sobre la mesa y mídela con una regla.</p>
+                      <p>Paso 3- Una vez sepas que medida tienes ya puedes escoger la medida que más te convenga de las medidas que te proponemos, siempre aproximándote al máximo a tu medida. Ten en cuenta si te gustan más bien ajustadas, un poco sueltas, o muy sueltas. Depende del modelo de pulsera es más conveniente escoger una opción u otra.</p>
+                      <div className="pdp-accordion-images">
+                        <Image src="/resources/como_medir/paso_1_mano.jpg" alt="Paso 1 para medir muñeca" width={400} height={400} />
+                        <Image src="/resources/como_medir/paso_2_mano.jpg" alt="Paso 2 para medir muñeca" width={400} height={400} />
+                        <Image src="/resources/como_medir/paso_3_mano.jpg" alt="Paso 3 para medir muñeca" width={400} height={400} />
+                      </div>
                     </div>
                   </details>
                 </div>
               </div>
-            )}
 
-            {/* Color selector (Origen line) */}
-            {!esSingular && coloresDisponibles.length > 0 && (
-              <div className="pdp-color-block">
-                <h3 className="pdp-block-title">Color del hilo</h3>
-                <p className="pdp-color-intro">Elige el color de hilo que te acompaña.</p>
-                <div className="color-swatches">
-                  {coloresDisponibles.map((opcion) => (
-                    <button
-                      key={opcion.slug}
-                      type="button"
-                      className={`color-swatch ${colorHilo === opcion.slug ? "active" : ""}`}
-                      style={{ backgroundColor: opcion.hex }}
-                      title={opcion.nombre}
-                      aria-label={`Hilo ${opcion.nombre}`}
-                      aria-pressed={colorHilo === opcion.slug}
-                      onClick={() => setColorHilo(opcion.slug)}
-                    />
-                  ))}
-                </div>
-                {color && <p className="color-selected">Hilo {color.nombre}</p>}
-              </div>
-            )}
-
-            {/* Fixed color (Singular line) */}
-            {esSingular && color && (
-              <div className="pdp-color-fijo">
-                <h3 className="pdp-block-title">Color del hilo</h3>
-                <p className="pdp-color-fijo-text">
-                  <span className="color-swatch color-swatch--static" style={{ backgroundColor: color.hex }} aria-hidden="true" />
-                  {color.nombre} · Fijo según el diseño de la autora
-                </p>
-              </div>
-            )}
-
-            {/* 6. Talla */}
-            {Array.isArray(producto.tallas) && producto.tallas.length > 0 && (
-              <div className="pdp-size-block">
-                <h3 className="pdp-block-title">Talla</h3>
-                <div className="pdp-size-options">
-                  <select
-                    className="pdp-size-select"
-                    value={selectedSize || ""}
-                    onChange={(e) => setSelectedSize(e.target.value || null)}
-                  >
-                    <option value="">Seleccione talla</option>
-                    {producto.tallas.map((t: string | number) => (
-                      <option key={String(t)} value={String(t)}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+              {/* 19. Cómo saber tu talla de anillo - Accordion */}
+              <div className="pdp-accordion">
+                <div className="pdp-accordion-item">
+                  <details>
+                    <summary>CÓMO SABER TU TALLA DE ANILLO</summary>
+                    <div className="pdp-accordion-content">
+                      <p>Paso 1: Recortamos una tira de papel o un trozo de cordel.</p>
+                      <p>Paso 2: Lo colocamos alrededor de nuestro dedo como si fuera un anillo.</p>
+                      <p>Paso 3: Realizamos una marca en los extremos del circulo de papel</p>
+                      <p>Paso 4: Medimos la distancia en milímetros y buscamos nuestra talla de anillo en la tabla</p>
+                      <table className="pdp-size-table">
+                        <thead>
+                          <tr>
+                            <th>MEDIDA</th>
+                            <th>TALLA</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr><td>46.8 mm</td><td>4</td></tr>
+                          <tr><td>46.8 mm</td><td>4’5</td></tr>
+                          <tr><td>49.3 mm</td><td>5</td></tr>
+                          <tr><td>50.6 mm</td><td>5’5</td></tr>
+                          <tr><td>51.8 mm</td><td>6</td></tr>
+                          <tr><td>51.8 mm</td><td>6’5</td></tr>
+                          <tr><td>54.3 mm</td><td>7</td></tr>
+                          <tr><td>55.6 mm</td><td>7’5</td></tr>
+                          <tr><td>56.9 mm</td><td>8</td></tr>
+                          <tr><td>56.9 mm</td><td>8’5</td></tr>
+                          <tr><td>59.4 mm</td><td>9</td></tr>
+                          <tr><td>60.9 mm</td><td>9’5</td></tr>
+                          <tr><td>62.2 mm</td><td>10</td></tr>
+                          <tr><td>63.5 mm</td><td>10’5</td></tr>
+                          <tr><td>64.7 mm</td><td>11</td></tr>
+                          <tr><td>66.0 mm</td><td>11’5</td></tr>
+                          <tr><td>67.2 mm</td><td>12</td></tr>
+                          <tr><td>67.2 mm</td><td>12’5</td></tr>
+                          <tr><td>69.7 mm</td><td>13</td></tr>
+                          <tr><td>71.0 mm</td><td>13’5</td></tr>
+                          <tr><td>72.3 mm</td><td>14</td></tr>
+                        </tbody>
+                      </table>
+                      <div className="pdp-accordion-images">
+                        <Image src="/resources/como_medir/paso_anillos.jpg" alt="Cómo medir tu talla de anillo" width={400} height={400} />
+                      </div>
+                    </div>
+                  </details>
                 </div>
               </div>
-            )}
 
-            {/* 7. Observaciones */}
-            <div className="pdp-observaciones">
-              <h3 className="pdp-block-title" style={{ fontWeight: 600 }}>Observaciones de la pieza</h3>
-              <p className="pdp-color-intro">¿Necesitas una talla diferente o un ajuste especial? Cuéntanoslo y lo realizamos a tus necesidades.</p>
-              <textarea
-                className="form-input form-textarea"
-                rows={3}
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
-                placeholder="Ej: talla 5 1/2, empaque para regalo,..."
-              />
             </div>
-
-            {/* 8-9. Action Buttons */}
-            <div className="pdp-actions">
-              {producto.modoAcceso === "disponible" ? (
-                <ProductDetailActions
-                  whatsappMessage={whatsappMessage}
-                  onAddToCart={handleAddToCart}
-                />
-              ) : producto.modoAcceso === "circulo" ? (
-                <>
-                  <Link className="pdp-add-btn pdp-add-btn--outline" href="/mi-perfil">
-                    Solicitar Acceso al Círculo
-                  </Link>
-                  <p className="pdp-access-note">Esta obra no está en stock abierto. Crea tu perfil en el Círculo para solicitar el acceso y ser notificado cuando haya una edición disponible.</p>
-                </>
-              ) : !esSingular ? (
-                <ProductDetailActions
-                  whatsappMessage={whatsappMessage}
-                  onAddToCart={handleAddToCart}
-                />
-              ) : esperaRegistrada ? (
-                <p className="pdp-waitlist-done">
-                  Te anotamos en la lista de espera de <strong>{producto.nombre}</strong>. Te avisaremos por correo cuando abramos la próxima edición.
-                </p>
-              ) : (
-                <form className="pdp-waitlist" onSubmit={handleEspera}>
-                  <label className="form-field">
-                    <span className="form-label">Correo para la lista de espera</span>
-                    <input
-                      className="form-input"
-                      type="email"
-                      value={emailEspera}
-                      onChange={(e) => setEmailEspera(e.target.value)}
-                      placeholder="tu@email.com"
-                      required
-                    />
-                  </label>
-                  <button type="submit" className="pdp-add-btn">
-                    Unirme a la Lista de Espera
-                  </button>
-                  <p className="pdp-access-note">Obra invariable de edición limitada. Guardamos tu lugar en la fila y te escribimos en cuanto haya una unidad.</p>
-                </form>
-              )}
-            </div>
-
-            {/* 10. Trust Badges (moved from ProductDetailActions) */}
-            <div className="pdp-trust-badges">
-              <div className="pdp-trust-item">
-                <p className="pdp-trust-title">🔒 Pago Seguro</p>
-                <p className="pdp-trust-desc">Wompi Colombia</p>
-              </div>
-              <div className="pdp-trust-item">
-                <p className="pdp-trust-title">📦 Envío Gratis</p>
-                <p className="pdp-trust-desc">A todo el país</p>
-              </div>
-              <div className="pdp-trust-item">
-                <p className="pdp-trust-title">✨ Oro Laminado</p>
-                <p className="pdp-trust-desc">Garantizado</p>
-              </div>
-            </div>
-
-            {/* 11. Return Policy Link */}
-            <p className="pdp-access-note pdp-policy-note">
-              {NOTA_PRODUCTO.antes}
-              <Link href={PAGINA_POLITICA.href}>{NOTA_PRODUCTO.enlace}</Link>
-              {NOTA_PRODUCTO.despues}
-            </p>
-
-            {/* 12. Share Section */}
-            <div className="pdp-share" style={{ marginTop: "1.5rem" }}>
-              <p className="pdp-share-note">Comparte este articulo con quien desees</p>
-              <button
-                type="button"
-                className="pdp-share-btn pdp-share-btn--whatsapp"
-                onClick={handleShareWhatsApp}
-                aria-label="Compartir por WhatsApp"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 3.5A14 14 0 0 1 21 12c0 4.7-2.8 8.8-6.9 10.4-.5.2-1 .1-1.3-.3a12 12 0 0 1-22-13.7c.2-.5.7-1 1.2-1.3A14 14 0 0 1 17.5 3.5z" /><path d="M12 9v4l2.5 2" /></svg>
-                <span>WhatsApp</span>
-              </button>
-              <button
-                type="button"
-                className="pdp-share-btn pdp-share-btn--copy"
-                onClick={handleShareCopy}
-                aria-label="Copiar enlace del producto"
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-                <span>{shareCopied ? "¡Copiado!" : "Copiar enlace"}</span>
-              </button>
-            </div>
-
-            {/* 13. Cuida de tus joyas - Accordion */}
-            <div className="pdp-accordion">
-              <div className="pdp-accordion-item">
-                <details>
-                  <summary>CUIDA DE TUS JOYAS</summary>
-                  <div className="pdp-accordion-content">
-                    <p>Desde Romany Melan te aconsejamos que hagas un uso adecuado de tus joyas. Son productos que aunque sean duraderos han de ser almacenados de forma independiente evitando el roce y a ser posible en bolsas individuales. No uses productos abrasivos para su limpieza. Recuerda tratarlas con cariño y mimo.</p>
-                  </div>
-                </details>
-              </div>
-            </div>
-
-            {/* 14. Cómo medir tu muñeca - Accordion */}
-            <div className="pdp-accordion">
-              <div className="pdp-accordion-item">
-                <details>
-                  <summary>CÓMO MEDIR TU MUÑECA</summary>
-                  <div className="pdp-accordion-content">
-                    <p>Paso 1- Envuelve tu muñeca con una cinta por la parte más estrecha.</p>
-                    <p>Paso 2- Coloca la cinta sobre la mesa y mídela con una regla.</p>
-                    <p>Paso 3- Una vez sepas que medida tienes ya puedes escoger la medida que más te convenga de las medidas que te proponemos, siempre aproximándote al máximo a tu medida. Ten en cuenta si te gustan más bien ajustadas, un poco sueltas, o muy sueltas. Depende del modelo de pulsera es más conveniente escoger una opción u otra.</p>
-                    <div className="pdp-accordion-images">
-                      <Image src="/resources/como_medir/paso_1_mano.jpg" alt="Paso 1 para medir muñeca" width={400} height={400} />
-                      <Image src="/resources/como_medir/paso_2_mano.jpg" alt="Paso 2 para medir muñeca" width={400} height={400} />
-                      <Image src="/resources/como_medir/paso_3_mano.jpg" alt="Paso 3 para medir muñeca" width={400} height={400} />
-                    </div>
-                  </div>
-                </details>
-              </div>
-            </div>
-
-            {/* 15. Cómo saber tu talla de anillo - Accordion */}
-            <div className="pdp-accordion">
-              <div className="pdp-accordion-item">
-                <details>
-                  <summary>CÓMO SABER TU TALLA DE ANILLO</summary>
-                  <div className="pdp-accordion-content">
-                    <p>Paso 1: Recortamos una tira de papel o un trozo de cordel.</p>
-                    <p>Paso 2: Lo colocamos alrededor de nuestro dedo como si fuera un anillo.</p>
-                    <p>Paso 3: Realizamos una marca en los extremos del circulo de papel</p>
-                    <p>Paso 4: Medimos la distancia en milímetros y buscamos nuestra talla de anillo en la tabla</p>
-                    <table className="pdp-size-table">
-                      <thead>
-                        <tr>
-                          <th>MEDIDA</th>
-                          <th>TALLA</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr><td>46.8 mm</td><td>4</td></tr>
-                        <tr><td>46.8 mm</td><td>4’5</td></tr>
-                        <tr><td>49.3 mm</td><td>5</td></tr>
-                        <tr><td>50.6 mm</td><td>5’5</td></tr>
-                        <tr><td>51.8 mm</td><td>6</td></tr>
-                        <tr><td>51.8 mm</td><td>6’5</td></tr>
-                        <tr><td>54.3 mm</td><td>7</td></tr>
-                        <tr><td>55.6 mm</td><td>7’5</td></tr>
-                        <tr><td>56.9 mm</td><td>8</td></tr>
-                        <tr><td>56.9 mm</td><td>8’5</td></tr>
-                        <tr><td>59.4 mm</td><td>9</td></tr>
-                        <tr><td>60.9 mm</td><td>9’5</td></tr>
-                        <tr><td>62.2 mm</td><td>10</td></tr>
-                        <tr><td>63.5 mm</td><td>10’5</td></tr>
-                        <tr><td>64.7 mm</td><td>11</td></tr>
-                        <tr><td>66.0 mm</td><td>11’5</td></tr>
-                        <tr><td>67.2 mm</td><td>12</td></tr>
-                        <tr><td>67.2 mm</td><td>12’5</td></tr>
-                        <tr><td>69.7 mm</td><td>13</td></tr>
-                        <tr><td>71.0 mm</td><td>13’5</td></tr>
-                        <tr><td>72.3 mm</td><td>14</td></tr>
-                      </tbody>
-                    </table>
-                    <div className="pdp-accordion-images">
-                      <Image src="/resources/como_medir/paso_anillos.jpg" alt="Cómo medir tu talla de anillo" width={400} height={400} />
-                    </div>
-                  </div>
-                </details>
-              </div>
-            </div>
-
           </div>
         </section>
       </main>
 
-      {/* 16. Related Products */}
+      {/* 20. Related Products */}
       <RelatedProducts productos={relacionados} />
 
       <SiteFooter />

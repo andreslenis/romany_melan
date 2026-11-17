@@ -31,6 +31,7 @@ interface Props {
     ciudad: string;
     departamento: string;
   };
+  codigoDescuento?: string;
 }
 
 type RespuestaPedido = {
@@ -42,7 +43,7 @@ type RespuestaPedido = {
   detail?: string;
 };
 
-export default function WebCheckoutForm({ total, referencia, items, datos }: Props) {
+export default function WebCheckoutForm({ total, referencia, items, datos, codigoDescuento }: Props) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +71,7 @@ export default function WebCheckoutForm({ total, referencia, items, datos }: Pro
             items,
             datos,
             ambiente: WOMPI_ENVIRONMENT,
+            codigo_descuento: codigoDescuento || null,
           }),
         });
 
@@ -113,7 +115,7 @@ export default function WebCheckoutForm({ total, referencia, items, datos }: Pro
         setEnviando(false);
       }
     },
-    [referencia, items, datos, enviando]
+    [referencia, items, datos, codigoDescuento, enviando]
   );
 
   const bloqueado = !wompiIsConfigured || Boolean(error);

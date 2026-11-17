@@ -16,6 +16,20 @@ import { randomId } from "@/lib/storage";
 import type { DireccionEnvio } from "@/lib/types";
 import { formatCOP } from "@/utils/format";
 
+type CodigoDescuentoInfo = {
+  valido: boolean;
+  descuentoTotal: number;
+  items: Array<{
+    slug: string;
+    precioOriginal: number;
+    precioConDescuento: number;
+    descuento: number;
+    cantidad: number;
+  }>;
+  totalConDescuento: number;
+  error?: string;
+};
+
 export default function CheckoutPage() {
   const { items, subtotal, hydrated } = useCart();
   const { perfil, registrar } = usePerfil();
@@ -24,6 +38,9 @@ export default function CheckoutPage() {
   const [modo, setModo] = useState<ModoRegistro>("miembro");
   const [datos, setDatos] = useState<DireccionEnvio>(datosIniciales());
   const [referencia] = useState(() => `RM-${Date.now()}-${randomId("REF")}`);
+  const [codigoDescuento, setCodigoDescuento] = useState("");
+  const [codigoInfo, setCodigoInfo] = useState<CodigoDescuentoInfo | null>(null);
+  const [validandoCodigo, setValidandoCodigo] = useState(false);
 
   // Si hay perfil logueado, forzar modo miembro y pre-llenar datos
   useEffect(() => {
@@ -41,10 +58,50 @@ export default function CheckoutPage() {
   const resumen = useMemo(
     () => ({
       piezas: items.reduce((acc, i) => acc + i.cantidad, 0),
-      total: subtotal,
+      total: codigoInfo?.totalConDescuento ?? subtotal,
+      subtotalOriginal: subtotal,
+      descuentoTotal: codigoInfo?.descuentoTotal ?? 0,
     }),
-    [items, subtotal]
+    [items, subtotal, codigoInfo]
   );
+
+  const validarCodigoDescuento = useCallback(async () => {
+    const codigo = codigoDescuento.trim().toUpperCase();
+    if (!codigo) {
+      setCodigoInfo(null);
+      return;
+    }
+    setValidandoCodigo(true);
+    try {
+      const res = await fetch("/api/checkout/validar-codigo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo, items }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setCodigoInfo(data);
+      } else {
+        setCodigoInfo({ valido: false, descuentoTotal: 0, items: [], totalConDescuento: subtotal, error: data.error || "Código no válido" });
+      }
+    } catch {
+      setCodigoInfo({ valido: false, descuentoTotal: 0, items: [], totalConDescuento: subtotal, error: "Error al validar código" });
+    } finally {
+      setValidandoCodigo(false);
+    }
+  }, [codigoDescuento, items, subtotal]);
+
+  const handleCodigoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setCodigoDescuento(e.target.value);
+    if (!e.target.value.trim()) {
+      setCodigoInfo(null);
+    }
+  }, []);
+
+  const handleAplicarCodigo = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    validarCodigoDescuento();
+  }, [validarCodigoDescuento]);
 
   const handleSubmitDatos = useCallback(async () => {
     if (modo === "miembro" && !perfil) {
@@ -132,7 +189,14 @@ export default function CheckoutPage() {
               <aside className="checkout-aside">
                 <OrderSummary
                   items={items}
-                  total={subtotal}
+                  total={resumen.total}
+                  subtotalOriginal={resumen.subtotalOriginal}
+                  descuentoTotal={resumen.descuentoTotal}
+                  codigoInfo={codigoInfo}
+                  codigoDescuento={codigoDescuento}
+                  onCodigoChange={handleCodigoChange}
+                  onAplicarCodigo={handleAplicarCodigo}
+                  validandoCodigo={validandoCodigo}
                   piezas={resumen.piezas}
                   perfilEmail={perfil?.email}
                 />
@@ -149,16 +213,24 @@ export default function CheckoutPage() {
                   ← Volver a los datos de envío
                 </button>
                 <WebCheckoutForm
-                  total={subtotal}
+                  total={resumen.total}
                   referencia={referencia}
                   items={items}
                   datos={datos}
+                  codigoDescuento={codigoDescuento}
                 />
               </div>
               <aside className="checkout-aside">
                 <OrderSummary
                   items={items}
-                  total={subtotal}
+                  total={resumen.total}
+                  subtotalOriginal={resumen.subtotalOriginal}
+                  descuentoTotal={resumen.descuentoTotal}
+                  codigoInfo={codigoInfo}
+                  codigoDescuento={codigoDescuento}
+                  onCodigoChange={handleCodigoChange}
+                  onAplicarCodigo={handleAplicarCodigo}
+                  validandoCodigo={validandoCodigo}
                   piezas={resumen.piezas}
                   perfilEmail={perfil?.email}
                 />
@@ -187,6 +259,13 @@ export default function CheckoutPage() {
 function OrderSummary({
   items,
   total,
+  subtotalOriginal,
+  descuentoTotal,
+  codigoInfo,
+  codigoDescuento,
+  onCodigoChange,
+  onAplicarCodigo,
+  validandoCodigo,
   piezas,
   perfilEmail,
 }: {
@@ -202,36 +281,125 @@ function OrderSummary({
     observaciones: string;
   }[];
   total: number;
+  subtotalOriginal: number;
+  descuentoTotal: number;
+  codigoInfo: CodigoDescuentoInfo | null;
+  codigoDescuento: string;
+  onCodigoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onAplicarCodigo: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  validandoCodigo: boolean;
   piezas: number;
   perfilEmail?: string;
 }) {
+  const tieneDescuento = codigoInfo?.valido === true && descuentoTotal > 0;
+
   return (
     <div className="order-summary">
       <h3 className="checkout-block-title">
         Tu pedido {piezas > 0 && `(${piezas})`}
       </h3>
-      <ul className="order-summary-items">
-        {items.map((item) => (
-          <li key={`${item.slug}-${item.talla ?? "s"}-${item.colorHilo ?? "-"}`}>
-            <span className="order-summary-name">
-              {item.nombre}
-              <span className="order-summary-meta">
-                {item.linea}
-                {item.talla ? ` · Talla ${item.talla}` : ""}
-                {item.colorHilo ? ` · Hilo ${item.colorHilo}` : ""}
-                {item.observaciones ? ` · ${item.observaciones}` : ""}
-              </span>
-            </span>
-            <span className="order-summary-price">
-              {formatCOP(item.precio * item.cantidad)}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <div className="order-summary-total">
-        <span>Subtotal</span>
-        <span>{formatCOP(total)}</span>
+
+      {/* Código de descuento */}
+      <div className="checkout-codigo-descuento">
+        <label className="form-field" style={{ marginBottom: "0.75rem" }}>
+          <span className="form-label">Código de descuento</span>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <input
+              className="form-input"
+              type="text"
+              value={codigoDescuento}
+              onChange={onCodigoChange}
+              placeholder="Ingresa tu código"
+              style={{ flex: 1, textTransform: "uppercase" }}
+              disabled={validandoCodigo || tieneDescuento}
+            />
+            <button
+              type="button"
+              className="cta-btn"
+              onClick={onAplicarCodigo}
+              disabled={validandoCodigo || !codigoDescuento.trim() || tieneDescuento}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              {validandoCodigo ? "Validando…" : tieneDescuento ? "Aplicado" : "Aplicar"}
+            </button>
+          </div>
+          {codigoInfo?.error && (
+            <p className="form-error" style={{ color: "#b3261e", fontSize: "0.8rem", marginTop: "0.35rem" }}>
+              {codigoInfo.error}
+            </p>
+          )}
+          {tieneDescuento && (
+            <p className="form-success" style={{ color: "#2d7a2d", fontSize: "0.8rem", marginTop: "0.35rem" }}>
+              ¡Código aplicado! Descuento del 5% en cada producto.
+            </p>
+          )}
+        </label>
       </div>
+
+      <ul className="order-summary-items">
+        {items.map((item) => {
+          const itemCodigoInfo = codigoInfo?.items.find((ci) => ci.slug === item.slug);
+          const tieneDescuentoItem = itemCodigoInfo && itemCodigoInfo.descuento > 0;
+          const precioUnitario = tieneDescuentoItem ? itemCodigoInfo.precioConDescuento : item.precio;
+          const precioOriginalUnitario = tieneDescuentoItem ? itemCodigoInfo.precioOriginal : item.precio;
+          const subtotalItem = precioUnitario * item.cantidad;
+
+          return (
+            <li key={`${item.slug}-${item.talla ?? "s"}-${item.colorHilo ?? "-"}`}>
+              <span className="order-summary-name">
+                {item.nombre}
+                <span className="order-summary-meta">
+                  {item.linea}
+                  {item.talla ? ` · Talla ${item.talla}` : ""}
+                  {item.colorHilo ? ` · Hilo ${item.colorHilo}` : ""}
+                  {item.observaciones ? ` · ${item.observaciones}` : ""}
+                </span>
+              </span>
+              <span className="order-summary-price">
+                {tieneDescuentoItem && (
+                  <>
+                    <span style={{ textDecoration: "line-through", color: "rgba(17,17,17,0.45)", fontSize: "0.85em", marginRight: "0.5rem" }}>
+                      {formatCOP(precioOriginalUnitario * item.cantidad)}
+                    </span>
+                    <span style={{ color: "#2d7a2d", fontWeight: 600 }}>
+                      {formatCOP(subtotalItem)}
+                    </span>
+                    <span style={{ color: "#2d7a2d", fontSize: "0.75em", marginLeft: "0.35rem" }}>
+                      (-{formatCOP(itemCodigoInfo.descuento * item.cantidad)})
+                    </span>
+                  </>
+                )}
+                {!tieneDescuentoItem && formatCOP(subtotalItem)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      {tieneDescuento && (
+        <div className="order-summary-discount">
+          <div className="order-summary-row">
+            <span>Subtotal</span>
+            <span>{formatCOP(subtotalOriginal)}</span>
+          </div>
+          <div className="order-summary-row" style={{ color: "#2d7a2d" }}>
+            <span>Descuento (5%)</span>
+            <span>-{formatCOP(descuentoTotal)}</span>
+          </div>
+          <div className="order-summary-total">
+            <span>Total a pagar</span>
+            <span>{formatCOP(total)}</span>
+          </div>
+        </div>
+      )}
+
+      {!tieneDescuento && (
+        <div className="order-summary-total">
+          <span>Subtotal</span>
+          <span>{formatCOP(total)}</span>
+        </div>
+      )}
+
       <p className="order-summary-note">
         Envío gratis a toda Colombia | Incluye Empaque y Certificado de piezas
       </p>

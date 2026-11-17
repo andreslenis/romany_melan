@@ -201,5 +201,12 @@ export async function applyWompiTransactionToPedido(
     console.error("[wompi/postpago] sendOrderConfirmationEmail exception", e);
   }
 
+  // Confirmar comisiones del embajador si hay código de descuento usado
+  try {
+    await supabase.rpc("confirmar_comision_pedido", { pedido_id_param: row.id });
+  } catch (e) {
+    console.error("[wompi/postpago] confirmar_comision_pedido exception", e);
+  }
+
   return { ok: true, pedidoId: row.id, estadoPago, postPagoProcesado: true };
 }

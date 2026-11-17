@@ -66,17 +66,31 @@ export default function SiteHeader() {
     const handleScroll = () => setScrolled(window.scrollY > 8);
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    const handleCloseMobileMenu = () => setMobileMenuOpen(false);
+    window.addEventListener("romany:close-mobile-menu", handleCloseMobileMenu);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("romany:close-mobile-menu", handleCloseMobileMenu);
+    };
   }, []);
 
   useEffect(() => {
     if (mobileMenuOpen) {
       document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "";
+      // Only reset overflow if cart drawer is not open
+      const cartDrawer = document.querySelector(".cart-drawer-root.is-open");
+      if (!cartDrawer) {
+        document.body.style.overflow = "";
+      }
     }
     return () => {
-      document.body.style.overflow = "";
+      const cartDrawer = document.querySelector(".cart-drawer-root.is-open");
+      if (!cartDrawer) {
+        document.body.style.overflow = "";
+      }
     };
   }, [mobileMenuOpen]);
 
