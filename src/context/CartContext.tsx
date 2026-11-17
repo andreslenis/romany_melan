@@ -23,6 +23,20 @@ export type CambioPrecio = {
   ahora: number;
 };
 
+export type CodigoDescuentoInfo = {
+  valido: boolean;
+  descuentoTotal: number;
+  items: Array<{
+    slug: string;
+    precioOriginal: number;
+    precioConDescuento: number;
+    descuento: number;
+    cantidad: number;
+  }>;
+  totalConDescuento: number;
+  error?: string;
+};
+
 type PrecioApi = Record<string, { nombre: string; precio: number; activo: boolean }>;
 
 interface CartContextValue {
@@ -32,6 +46,8 @@ interface CartContextValue {
   isOpen: boolean;
   hydrated: boolean;
   cambiosPrecio: CambioPrecio[];
+  codigoDescuento: string;
+  codigoInfo: CodigoDescuentoInfo | null;
   addItem: (item: Omit<CartItem, "cantidad">, cantidad?: number) => void;
   removeItem: (slug: string, talla?: string | null, color?: string | null) => void;
   updateQuantity: (
@@ -45,6 +61,9 @@ interface CartContextValue {
   close: () => void;
   syncPrices: () => Promise<CambioPrecio[]>;
   descartarCambiosPrecio: () => void;
+  setCodigoDescuento: (codigo: string) => void;
+  setCodigoInfo: (info: CodigoDescuentoInfo | null) => void;
+  clearCodigoDescuento: () => void;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -61,6 +80,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [cambiosPrecio, setCambiosPrecio] = useState<CambioPrecio[]>([]);
+  const [codigoDescuento, setCodigoDescuentoState] = useState<string>("");
+  const [codigoInfo, setCodigoInfoState] = useState<CodigoDescuentoInfo | null>(null);
   const itemsRef = useRef<CartItem[]>([]);
 
   useEffect(() => {
@@ -125,6 +146,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
   const descartarCambiosPrecio = useCallback(() => setCambiosPrecio([]), []);
+
+  const setCodigoDescuento = useCallback((codigo: string) => {
+    setCodigoDescuentoState(codigo);
+  }, []);
+
+  const setCodigoInfo = useCallback((info: CodigoDescuentoInfo | null) => {
+    setCodigoInfoState(info);
+  }, []);
+
+  const clearCodigoDescuento = useCallback(() => {
+    setCodigoDescuentoState("");
+    setCodigoInfoState(null);
+  }, []);
 
   /**
    * Refresca los precios del carrito contra la base de datos.
@@ -194,6 +228,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         isOpen,
         hydrated,
         cambiosPrecio,
+        codigoDescuento,
+        codigoInfo,
         addItem,
         removeItem,
         updateQuantity,
@@ -202,6 +238,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         close,
         syncPrices,
         descartarCambiosPrecio,
+        setCodigoDescuento,
+        setCodigoInfo,
+        clearCodigoDescuento,
       };
     },
     [
@@ -209,6 +248,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       isOpen,
       hydrated,
       cambiosPrecio,
+      codigoDescuento,
+      codigoInfo,
       addItem,
       removeItem,
       updateQuantity,
@@ -217,6 +258,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       close,
       syncPrices,
       descartarCambiosPrecio,
+      setCodigoDescuento,
+      setCodigoInfo,
+      clearCodigoDescuento,
     ]
   );
 

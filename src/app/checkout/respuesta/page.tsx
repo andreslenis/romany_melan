@@ -21,7 +21,7 @@ const POLL_MAX = 40;
 function RespuestaContent() {
   const params = useSearchParams();
   const transactionId = params.get("id");
-  const { clear } = useCart();
+  const { clear, clearCodigoDescuento } = useCart();
   const [state, setState] = useState<TxState>({
     estadoPago: null,
     reference: null,
@@ -119,9 +119,10 @@ function RespuestaContent() {
   useEffect(() => {
     if (state.estadoPago === "APROBADO" && !cleared) {
       clear();
+      clearCodigoDescuento();
       setCleared(true);
     }
-  }, [state.estadoPago, cleared, clear]);
+  }, [state.estadoPago, cleared, clear, clearCodigoDescuento]);
 
   const status = state.estadoPago;
 

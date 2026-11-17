@@ -20,6 +20,10 @@ export default function CartDrawer() {
     cambiosPrecio,
     descartarCambiosPrecio,
     syncPrices,
+    codigoDescuento,
+    codigoInfo,
+    setCodigoDescuento,
+    setCodigoInfo,
   } = useCart();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -117,7 +121,62 @@ export default function CartDrawer() {
               </Link>
             </div>
           ) : (
-            <ul className="cart-items">
+            <>
+              {/* Código de descuento en carrito */}
+              <div className="cart-codigo-descuento">
+                <label className="form-field" style={{ marginBottom: "0.75rem" }}>
+                  <span className="form-label">Código de descuento</span>
+                  <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <input
+                      className="form-input"
+                      type="text"
+                      value={codigoDescuento}
+                      onChange={(e) => setCodigoDescuento(e.target.value.toUpperCase())}
+                      placeholder="Ingresa tu código"
+                      style={{ flex: 1, textTransform: "uppercase" }}
+                      disabled={codigoInfo?.valido === true}
+                    />
+                    <button
+                      type="button"
+                      className="cta-btn"
+                      onClick={async () => {
+                        const codigo = codigoDescuento.trim().toUpperCase();
+                        if (!codigo) return;
+                        try {
+                          const res = await fetch("/api/checkout/validar-codigo", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ codigo, items }),
+                          });
+                          const data = await res.json();
+                          if (res.ok && data.ok) {
+                            setCodigoInfo(data);
+                          } else {
+                            setCodigoInfo({ valido: false, descuentoTotal: 0, items: [], totalConDescuento: subtotal, error: data.error || "Código no válido" });
+                          }
+                        } catch {
+                          setCodigoInfo({ valido: false, descuentoTotal: 0, items: [], totalConDescuento: subtotal, error: "Error al validar código" });
+                        }
+                      }}
+                      disabled={!codigoDescuento.trim() || codigoInfo?.valido === true}
+                      style={{ whiteSpace: "nowrap" }}
+                    >
+                      {codigoInfo?.valido === true ? "Aplicado" : "Aplicar"}
+                    </button>
+                  </div>
+                  {codigoInfo?.error && (
+                    <p className="form-error" style={{ color: "#b3261e", fontSize: "0.8rem", marginTop: "0.35rem" }}>
+                      {codigoInfo.error}
+                    </p>
+                  )}
+                  {codigoInfo?.valido === true && (
+                    <p className="form-success" style={{ color: "#2d7a2d", fontSize: "0.8rem", marginTop: "0.35rem" }}>
+                      ¡Código aplicado! Descuento del 5% en cada producto.
+                    </p>
+                  )}
+                </label>
+              </div>
+              <ul className="cart-items">
               {items.map((item) => {
                 const color = colorPorId(item.colorHilo);
                 return (
@@ -207,9 +266,10 @@ export default function CartDrawer() {
                   </li>
                 );
               })}
-            </ul>
-          )}
-        </div>
+</ul>
+              </>
+            )}
+          </div>
 
         {items.length > 0 && (
           <footer className="cart-drawer-footer">
@@ -217,6 +277,18 @@ export default function CartDrawer() {
               <span>Subtotal</span>
               <span className="cart-subtotal-value">{formatCOP(subtotal)}</span>
             </div>
+            {codigoInfo?.valido === true && (
+              <div className="cart-discount" style={{ color: "#2d7a2d", fontSize: "0.85rem", marginBottom: "0.5rem" }}>
+                <span>Descuento (5%)</span>
+                <span style={{ marginLeft: "auto" }}>-{formatCOP(codigoInfo.descuentoTotal)}</span>
+              </div>
+            )}
+            {codigoInfo?.valido === true && (
+              <div className="cart-total" style={{ fontWeight: 600, fontSize: "1.1rem" }}>
+                <span>Total a pagar</span>
+                <span style={{ marginLeft: "auto" }}>{formatCOP(codigoInfo.totalConDescuento)}</span>
+              </div>
+            )}
             <p className="cart-note">
               Envío seguro a toda Colombia | Incluye Empaque de Lujo y Certificado
             </p>

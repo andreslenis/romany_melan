@@ -10,36 +10,20 @@ import CheckoutForm, {
   type ModoRegistro,
 } from "@/components/checkout/CheckoutForm";
 import WebCheckoutForm from "@/components/checkout/WebCheckoutForm";
-import { useCart } from "@/context/CartContext";
+import { useCart, type CodigoDescuentoInfo } from "@/context/CartContext";
 import { usePerfil } from "@/context/ProfileContext";
 import { randomId } from "@/lib/storage";
 import type { DireccionEnvio } from "@/lib/types";
 import { formatCOP } from "@/utils/format";
 
-type CodigoDescuentoInfo = {
-  valido: boolean;
-  descuentoTotal: number;
-  items: Array<{
-    slug: string;
-    precioOriginal: number;
-    precioConDescuento: number;
-    descuento: number;
-    cantidad: number;
-  }>;
-  totalConDescuento: number;
-  error?: string;
-};
-
 export default function CheckoutPage() {
-  const { items, subtotal, hydrated } = useCart();
+  const { items, subtotal, hydrated, codigoDescuento, codigoInfo, setCodigoDescuento, setCodigoInfo } = useCart();
   const { perfil, registrar } = usePerfil();
 
   const [paso, setPaso] = useState<1 | 2>(1);
   const [modo, setModo] = useState<ModoRegistro>("miembro");
   const [datos, setDatos] = useState<DireccionEnvio>(datosIniciales());
   const [referencia] = useState(() => `RM-${Date.now()}-${randomId("REF")}`);
-  const [codigoDescuento, setCodigoDescuento] = useState("");
-  const [codigoInfo, setCodigoInfo] = useState<CodigoDescuentoInfo | null>(null);
   const [validandoCodigo, setValidandoCodigo] = useState(false);
 
   // Si hay perfil logueado, forzar modo miembro y pre-llenar datos
@@ -89,14 +73,14 @@ export default function CheckoutPage() {
     } finally {
       setValidandoCodigo(false);
     }
-  }, [codigoDescuento, items, subtotal]);
+  }, [codigoDescuento, items, subtotal, setCodigoInfo]);
 
   const handleCodigoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setCodigoDescuento(e.target.value);
+    setCodigoDescuento(e.target.value.toUpperCase());
     if (!e.target.value.trim()) {
       setCodigoInfo(null);
     }
-  }, []);
+  }, [setCodigoDescuento, setCodigoInfo]);
 
   const handleAplicarCodigo = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

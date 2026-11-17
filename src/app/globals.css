@@ -81,7 +81,7 @@ button {
   backdrop-filter: blur(8px);
   border-bottom: 1px solid transparent;
   transition: border-bottom 0.3s ease;
-  padding: 1.25rem 0;
+  padding: 0.75rem 0;
 }
 
 .header.scrolled {
@@ -786,7 +786,7 @@ button {
 
 /* Products */
 .products-section {
-  padding: clamp(2rem, 6vw, 4rem) 0 clamp(4rem, 10vw, 6rem);
+  padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(4rem, 10vw, 6rem);
 }
 
 .products-grid {
@@ -1138,7 +1138,7 @@ button {
 /* Announcement Bar */
 .announcement-bar {
   background-color: #1A1918;
-  color: #D4AF37;
+  color: #FFFFFF;
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.1em;
@@ -2892,7 +2892,7 @@ button {
 
 /* Checkout */
 .checkout-page {
-  padding: clamp(2rem, 6vw, 4rem) 0 clamp(4rem, 10vw, 6rem);
+  padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(4rem, 10vw, 6rem);
   min-height: 70vh;
 }
 
@@ -3341,7 +3341,7 @@ button {
 
 /* Perfil */
 .profile-page {
-  padding: clamp(2rem, 6vw, 4rem) 0 clamp(4rem, 10vw, 6rem);
+  padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(4rem, 10vw, 6rem);
   min-height: 70vh;
 }
 
@@ -4158,7 +4158,7 @@ button {
 }
 
 .admin-dashboard {
-  padding: clamp(2rem, 6vw, 4rem) 0 clamp(4rem, 10vw, 6rem);
+  padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(4rem, 10vw, 6rem);
   min-height: 70vh;
 }
 
@@ -4265,7 +4265,7 @@ button {
 
 /* Admin Productos / Pages */
 .admin-productos {
-  padding: clamp(2rem, 6vw, 4rem) 0 clamp(4rem, 10vw, 6rem);
+  padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(4rem, 10vw, 6rem);
   min-height: 70vh;
 }
 
@@ -4612,7 +4612,7 @@ button {
 
 /* Productos relacionados en la ficha */
 .related-section {
-  padding: clamp(2rem, 6vw, 4rem) 0 clamp(4rem, 10vw, 6rem);
+  padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(4rem, 10vw, 6rem);
 }
 
 .related-title {
