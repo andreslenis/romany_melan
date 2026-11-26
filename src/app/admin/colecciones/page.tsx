@@ -159,6 +159,18 @@ export default function AdminColecciones() {
       URL.revokeObjectURL(fotoFinal);
       URL.revokeObjectURL(bannerFotoFinal);
       load();
+      // Refresca el home (ISR) para que el banner aparezca sin esperar el ciclo de revalidate.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          await fetch("/api/admin/revalidate", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+        }
+      } catch {
+        // Si falla, el home se actualizará en el próximo ciclo ISR (1800 s).
+      }
       alert("Colección guardada");
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
