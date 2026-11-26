@@ -23,6 +23,8 @@ type ColeccionForm = {
   acento_color_hex: string;
   modo_acceso: ModoColeccion;
   orden: number;
+  banner_activo: boolean;
+  banner_foto_url: string;
 };
 
 export default function AdminColecciones() {
@@ -38,12 +40,17 @@ export default function AdminColecciones() {
     acento_color_hex: "#A882C1",
     modo_acceso: "activa",
     orden: 0,
+    banner_activo: false,
+    banner_foto_url: "",
   });
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [selectedBannerFile, setSelectedBannerFile] = useState<File | null>(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const bannerFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = async () => {
     const { data } = await supabase.from("colecciones").select("*").order("nombre");
@@ -65,6 +72,15 @@ export default function AdminColecciones() {
     }
   };
 
+  const handleBannerFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setSelectedBannerFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setForm((prev) => ({ ...prev, banner_foto_url: url }));
+    }
+  };
+
   const uploadFoto = async (): Promise<string | null> => {
     if (!selectedFile) return null;
     setUploading(true);
@@ -79,11 +95,31 @@ export default function AdminColecciones() {
     }
   };
 
+  const uploadBannerFoto = async (): Promise<string | null> => {
+    if (!selectedBannerFile) return null;
+    setUploadingBanner(true);
+    try {
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}-${selectedBannerFile.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
+      const { error: upErr } = await supabase.storage.from("colecciones").upload(path, selectedBannerFile);
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("colecciones").getPublicUrl(path);
+      return pub.publicUrl;
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
   const guardar = async () => {
     let fotoFinal = form.foto_url;
     if (selectedFile) {
       const uploaded = await uploadFoto();
       if (uploaded) fotoFinal = uploaded;
+    }
+
+    let bannerFotoFinal = form.banner_foto_url;
+    if (selectedBannerFile) {
+      const uploadedBanner = await uploadBannerFoto();
+      if (uploadedBanner) bannerFotoFinal = uploadedBanner;
     }
 
     const payload = {
@@ -98,6 +134,8 @@ export default function AdminColecciones() {
       modo_acceso: form.modo_acceso,
       activa: form.modo_acceso === "activa",
       orden: Number(form.orden) || 0,
+      banner_activo: form.banner_activo,
+      banner_foto_url: bannerFotoFinal || null,
     };
 
     try {
@@ -111,11 +149,15 @@ export default function AdminColecciones() {
       setForm({
         nombre: "", slug: "", descripcion: "", foto_url: "", texto_boton: "Ingresar a la Colección",
         descripcion_larga: "", lema: "", acento_color_hex: "#A882C1", modo_acceso: "activa", orden: 0,
+        banner_activo: false, banner_foto_url: "",
       });
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      setSelectedBannerFile(null);
+      if (bannerFileInputRef.current) bannerFileInputRef.current.value = "";
       setEditingId(null);
       URL.revokeObjectURL(fotoFinal);
+      URL.revokeObjectURL(bannerFotoFinal);
       load();
       alert("Colección guardada");
     } catch (e) {
@@ -137,8 +179,12 @@ export default function AdminColecciones() {
       acento_color_hex: c.acento_color_hex || "#A882C1",
       modo_acceso: c.modo_acceso || "activa",
       orden: c.orden ?? 0,
+      banner_activo: c.banner_activo ?? false,
+      banner_foto_url: c.banner_foto_url || "",
     });
     setSelectedFile(null);
+    setSelectedBannerFile(null);
+    if (bannerFileInputRef.current) bannerFileInputRef.current.value = "";
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
   };
 
@@ -183,14 +229,15 @@ export default function AdminColecciones() {
                   <th>Color</th>
                   <th>Modo</th>
                   <th>Foto</th>
+                  <th>Banner</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={7} style={{ padding: "2rem", textAlign: "center" }}>Cargando…</td></tr>
+                  <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center" }}>Cargando…</td></tr>
                 ) : colecciones.length === 0 ? (
-                  <tr><td colSpan={7} style={{ padding: "2rem", textAlign: "center", color: "rgba(17,17,17,0.5)" }}>No hay colecciones registradas.</td></tr>
+                  <tr><td colSpan={8} style={{ padding: "2rem", textAlign: "center", color: "rgba(17,17,17,0.5)" }}>No hay colecciones registradas.</td></tr>
                 ) : colecciones.map((c) => (
                   <tr key={c.id}>
                     <td style={{ fontWeight: 500 }}>{c.nombre}</td>
@@ -206,6 +253,13 @@ export default function AdminColecciones() {
                         <img src={c.foto_url} alt="" className="admin-coleccion-foto" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 4 }} />
                       ) : (
                         <span className="admin-coleccion-sinfoto">-</span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: "center" }}>
+                      {c.banner_activo ? (
+                        <span style={{ color: "var(--color-accent)", fontWeight: 600 }}>Sí</span>
+                      ) : (
+                        <span style={{ color: "rgba(0,0,0,0.4)" }}>No</span>
                       )}
                     </td>
                     <td style={{ textAlign: "right" }}>
@@ -240,6 +294,18 @@ export default function AdminColecciones() {
                   </div>
                 )}
                 {uploading && <p style={{ fontSize: "0.75rem", color: "rgba(0,0,0,0.5)", marginTop: "0.25rem" }}>Subiendo foto…</p>}
+              </div>
+              <div className="admin-form-field admin-form-field--full">
+                <label className="admin-form-label">Foto del banner (carrusel del inicio)</label>
+                <input ref={bannerFileInputRef} className="form-input" type="file" accept="image/*" disabled={uploadingBanner} onChange={handleBannerFotoChange} />
+                {form.banner_foto_url && (
+                  <div style={{ marginTop: "0.5rem" }}>
+                    <img src={form.banner_foto_url} alt="preview banner" style={{ width: 120, height: 120, objectFit: "cover", borderRadius: 4 }} />
+                    {selectedBannerFile && <button type="button" onClick={() => { setSelectedBannerFile(null); if (bannerFileInputRef.current) bannerFileInputRef.current.value = ""; setForm({ ...form, banner_foto_url: "" }); }} style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "#b3261e" }}>Quitar foto</button>}
+                  </div>
+                )}
+                {uploadingBanner && <p style={{ fontSize: "0.75rem", color: "rgba(0,0,0,0.5)", marginTop: "0.25rem" }}>Subiendo foto del banner…</p>}
+                <p style={{ fontSize: "0.75rem", color: "rgba(0,0,0,0.5)", marginTop: "0.25rem" }}>Imagen horizontal para el carrusel del inicio (se recomienda 1920×1080).</p>
               </div>
               <div className="admin-form-field admin-form-field--full">
                 <label className="admin-form-label">Descripción corta</label>
@@ -278,8 +344,16 @@ export default function AdminColecciones() {
                 <input className="form-input" type="number" min={0} placeholder="0" value={form.orden} onChange={(e) => setForm({ ...form, orden: Number(e.target.value) })} />
                 <p style={{ fontSize: "0.75rem", color: "rgba(0,0,0,0.5)", marginTop: "0.25rem" }}>Menor número aparece primero. Empates se ordenan por nombre.</p>
               </div>
+              <div className="admin-form-field admin-form-field--full">
+                <label className="admin-form-label">Banner en el inicio</label>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                  <input type="checkbox" checked={form.banner_activo} onChange={(e) => setForm({ ...form, banner_activo: e.target.checked })} />
+                  <span>Mostrar esta colección en el carrusel de banners del inicio</span>
+                </label>
+                <p style={{ fontSize: "0.75rem", color: "rgba(0,0,0,0.5)", marginTop: "0.25rem" }}>Solo se muestra si la colección está en modo «Activa» y tiene foto de banner (o foto de la colección).</p>
+              </div>
             </div>
-            <button className="cta-btn admin-form-save" onClick={guardar} style={{ marginTop: "1rem" }} disabled={uploading}>
+            <button className="cta-btn admin-form-save" onClick={guardar} style={{ marginTop: "1rem" }} disabled={uploading || uploadingBanner}>
               {editingId ? "Actualizar Colección" : "Guardar Colección"}
             </button>
           </section>

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import SiteFooter from "@/components/SiteFooter";
 import SiteHeader from "@/components/SiteHeader";
 import HeroBanner from "@/components/home/HeroBanner";
+import CollectionBannerCarousel from "@/components/home/CollectionBannerCarousel";
 import ProductCarousel from "@/components/home/ProductCarousel";
 import { usePerfil } from "@/context/ProfileContext";
 import type { Coleccion } from "@/lib/types";
@@ -61,7 +62,11 @@ export default function HomeClient({ colecciones, productosDestacados }: HomeCli
       <SiteHeader />
 
       <main id="inicio">
-        <HeroBanner />
+        {colecciones.some((c) => c.modo_acceso === "activa" && c.banner_activo) ? (
+          <CollectionBannerCarousel colecciones={colecciones} />
+        ) : (
+          <HeroBanner />
+        )}
         <ProductCarousel productos={productosDestacados} />
 
         <section className="collection-section" id="coleccion">

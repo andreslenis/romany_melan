@@ -1,7 +1,7 @@
 import HomeClient from "@/components/home/HomeClient";
 import { getColeccionesPublicas, getProductosDestacados } from "@/lib/supabase/queries";
 
-export const revalidate = 3600;
+export const revalidate = 1800;
 
 export default async function Home() {
   const [colecciones, productosDestacados] = await Promise.all([

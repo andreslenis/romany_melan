@@ -39,6 +39,8 @@ export interface Coleccion {
   activa?: boolean;
   modo_acceso?: ModoColeccion;
   orden?: number;
+  banner_activo?: boolean;
+  banner_foto_url?: string;
 }
 
 export interface Producto {
