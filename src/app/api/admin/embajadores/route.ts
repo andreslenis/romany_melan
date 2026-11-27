@@ -29,6 +29,7 @@ type EmbajadorRow = {
     id: string;
     codigo: string;
     porcentaje_descuento: number;
+    porcentaje_comision: number;
     activo: boolean;
     usos_totales: number;
   }> | null;
@@ -89,6 +90,7 @@ export async function GET(req: Request) {
           id,
           codigo,
           porcentaje_descuento,
+          porcentaje_comision,
           activo,
           usos_totales
         )
@@ -113,6 +115,8 @@ export async function GET(req: Request) {
         ultima_liquidacion: e.ultima_liquidacion,
         created_at: e.created_at,
         usos_totales: codigo?.usos_totales || 0,
+        porcentaje_descuento: codigo?.porcentaje_descuento ?? 5,
+        porcentaje_comision: codigo?.porcentaje_comision ?? 10,
       };
     });
 
@@ -130,6 +134,8 @@ export async function POST(req: Request) {
       telefono?: string;
       codigo?: string;
       activo?: boolean;
+      porcentaje_descuento?: number;
+      porcentaje_comision?: number;
     };
     try {
       body = await req.json();
@@ -141,6 +147,12 @@ export async function POST(req: Request) {
     const telefono = String(body.telefono || "").trim();
     const codigo = String(body.codigo || "").trim().toUpperCase();
     const activo = body.activo !== false;
+    const porcentajeDescuento = Number.isFinite(body.porcentaje_descuento)
+      ? Number(body.porcentaje_descuento)
+      : 5;
+    const porcentajeComision = Number.isFinite(body.porcentaje_comision)
+      ? Number(body.porcentaje_comision)
+      : 10;
 
     if (!nombre || !telefono || !codigo) {
       return NextResponse.json({ ok: false, error: "missing_fields", required: ["nombre", "telefono", "codigo"] }, { status: 400 });
@@ -174,7 +186,8 @@ export async function POST(req: Request) {
       .insert({
         codigo,
         embajador_id: embajador!.id,
-        porcentaje_descuento: 5,
+        porcentaje_descuento: porcentajeDescuento,
+        porcentaje_comision: porcentajeComision,
         activo,
       });
 
@@ -202,6 +215,8 @@ export async function PATCH(req: Request) {
       telefono?: string;
       codigo?: string;
       activo?: boolean;
+      porcentaje_descuento?: number;
+      porcentaje_comision?: number;
     };
     try {
       body = await req.json();
@@ -217,6 +232,10 @@ export async function PATCH(req: Request) {
     if (body.nombre !== undefined) updates.nombre = String(body.nombre).trim();
     if (body.telefono !== undefined) updates.telefono = String(body.telefono).trim();
     if (body.activo !== undefined) updates.activo = body.activo;
+    if (body.porcentaje_descuento !== undefined)
+      updates.porcentaje_descuento = Number(body.porcentaje_descuento);
+    if (body.porcentaje_comision !== undefined)
+      updates.porcentaje_comision = Number(body.porcentaje_comision);
 
     // El código no se puede cambiar (está en ambas tablas)
     if (Object.keys(updates).length === 0) {
@@ -247,6 +266,28 @@ export async function PATCH(req: Request) {
         await supabaseAdmin
           .from("codigos_descuento")
           .update({ activo: body.activo })
+          .eq("codigo", embajador.codigo);
+      }
+    }
+
+    // Sincronizar porcentajes de descuento y comisión con el código del embajador
+    if (body.porcentaje_descuento !== undefined || body.porcentaje_comision !== undefined) {
+      const { data: embajador } = await supabaseAdmin
+        .from("embajadores")
+        .select("codigo")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (embajador) {
+        const porcentajeUpdates: Record<string, unknown> = {};
+        if (body.porcentaje_descuento !== undefined)
+          porcentajeUpdates.porcentaje_descuento = Number(body.porcentaje_descuento);
+        if (body.porcentaje_comision !== undefined)
+          porcentajeUpdates.porcentaje_comision = Number(body.porcentaje_comision);
+
+        await supabaseAdmin
+          .from("codigos_descuento")
+          .update(porcentajeUpdates)
           .eq("codigo", embajador.codigo);
       }
     }

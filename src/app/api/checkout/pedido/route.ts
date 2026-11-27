@@ -180,13 +180,15 @@ export async function POST(req: Request) {
       // Obtener info del código y embajador
       const { data: codigoData } = await supabaseAdmin
         .from("codigos_descuento")
-        .select("id, embajador_id, porcentaje_descuento")
+        .select("id, embajador_id, porcentaje_descuento, porcentaje_comision")
         .eq("codigo", resuelto.codigoAplicado)
         .maybeSingle();
 
       if (codigoData && codigoData.embajador_id) {
         const embajadorId = codigoData.embajador_id;
-        const porcentajeComision = 10; // 10% fijo sobre el total con descuento
+        const porcentajeComision = Number.isFinite(codigoData.porcentaje_comision)
+          ? Number(codigoData.porcentaje_comision)
+          : 10;
         const comisionMonto = Math.round(total_cop * (porcentajeComision / 100));
 
         // Crear registro de comisión por cada item (para auditoría detallada)
