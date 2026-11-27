@@ -15,6 +15,8 @@ type Embajador = {
   ultima_liquidacion: string | null;
   usos_totales: number;
   created_at: string;
+  porcentaje_descuento: number;
+  porcentaje_comision: number;
 };
 
 type Comision = {
@@ -63,7 +65,7 @@ export default function AdminEmbajadores() {
   const [comisionesLoading, setComisionesLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [formData, setFormData] = useState({ nombre: "", telefono: "", codigo: "", activo: true });
+  const [formData, setFormData] = useState({ nombre: "", telefono: "", codigo: "", activo: true, porcentaje_descuento: 5, porcentaje_comision: 10 });
   const [submitting, setSubmitting] = useState(false);
 
   const loadEmbajadores = useCallback(async () => {
@@ -109,13 +111,20 @@ export default function AdminEmbajadores() {
   }, [loadComisiones]);
 
   const handleCreateClick = () => {
-    setFormData({ nombre: "", telefono: "", codigo: "", activo: true });
+    setFormData({ nombre: "", telefono: "", codigo: "", activo: true, porcentaje_descuento: 5, porcentaje_comision: 10 });
     setShowCreateModal(true);
     setShowEditModal(false);
   };
 
   const handleEditClick = (emb: Embajador) => {
-    setFormData({ nombre: emb.nombre, telefono: emb.telefono, codigo: emb.codigo, activo: emb.activo });
+    setFormData({
+      nombre: emb.nombre,
+      telefono: emb.telefono,
+      codigo: emb.codigo,
+      activo: emb.activo,
+      porcentaje_descuento: emb.porcentaje_descuento,
+      porcentaje_comision: emb.porcentaje_comision,
+    });
     setShowEditModal(true);
     setShowCreateModal(false);
     setSelectedEmbajador(emb);
@@ -214,6 +223,7 @@ export default function AdminEmbajadores() {
                   <th>Nombre</th>
                   <th>Teléfono</th>
                   <th>Código</th>
+                  <th>Reparto</th>
                   <th>Estado</th>
                   <th>Usos</th>
                   <th>Com. Acumulada</th>
@@ -224,14 +234,15 @@ export default function AdminEmbajadores() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center" }}>Cargando…</td></tr>
+                  <tr><td colSpan={10} style={{ padding: "2rem", textAlign: "center" }}>Cargando…</td></tr>
                 ) : embajadores.length === 0 ? (
-                  <tr><td colSpan={9} style={{ padding: "2rem", textAlign: "center", color: "rgba(17,17,17,0.5)" }}>No hay embajadores registrados.</td></tr>
+                  <tr><td colSpan={10} style={{ padding: "2rem", textAlign: "center", color: "rgba(17,17,17,0.5)" }}>No hay embajadores registrados.</td></tr>
                 ) : embajadores.map((emb) => (
                   <tr key={emb.id}>
                     <td>{emb.nombre}</td>
                     <td>{emb.telefono}</td>
                     <td><code style={{ background: "#f5f5f5", padding: "0.15rem 0.4rem", borderRadius: "0.25rem" }}>{emb.codigo}</code></td>
+                    <td>{emb.porcentaje_descuento}% desc / {emb.porcentaje_comision}% com</td>
                     <td>
                       <span className={emb.activo ? "estado-activo" : "estado-inactivo"}>
                         {emb.activo ? "Activo" : "Inactivo"}
@@ -390,6 +401,34 @@ export default function AdminEmbajadores() {
                       />
                       {showEditModal && <small style={{ color: "rgba(17,17,17,0.5)" }}>El código no se puede cambiar</small>}
                     </label>
+                    <div style={{ display: "flex", gap: "1rem" }}>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem", flex: 1 }}>
+                        <span style={{ fontWeight: 500 }}>% Descuento comprador</span>
+                        <input
+                          className="form-input"
+                          type="number"
+                          name="porcentaje_descuento"
+                          min="0"
+                          step="0.01"
+                          value={formData.porcentaje_descuento}
+                          onChange={handleFormChange}
+                          placeholder="5"
+                        />
+                      </label>
+                      <label style={{ display: "flex", flexDirection: "column", gap: "0.35rem", flex: 1 }}>
+                        <span style={{ fontWeight: 500 }}>% Comisión embajador</span>
+                        <input
+                          className="form-input"
+                          type="number"
+                          name="porcentaje_comision"
+                          min="0"
+                          step="0.01"
+                          value={formData.porcentaje_comision}
+                          onChange={handleFormChange}
+                          placeholder="10"
+                        />
+                      </label>
+                    </div>
                     <label style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                       <input
                         type="checkbox"
