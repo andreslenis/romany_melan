@@ -232,25 +232,30 @@ export async function PATCH(req: Request) {
     if (body.nombre !== undefined) updates.nombre = String(body.nombre).trim();
     if (body.telefono !== undefined) updates.telefono = String(body.telefono).trim();
     if (body.activo !== undefined) updates.activo = body.activo;
+
+    // Porcentajes van a codigos_descuento, no a embajadores
+    const porcentajeUpdates: Record<string, unknown> = {};
     if (body.porcentaje_descuento !== undefined)
-      updates.porcentaje_descuento = Number(body.porcentaje_descuento);
+      porcentajeUpdates.porcentaje_descuento = Number(body.porcentaje_descuento);
     if (body.porcentaje_comision !== undefined)
-      updates.porcentaje_comision = Number(body.porcentaje_comision);
+      porcentajeUpdates.porcentaje_comision = Number(body.porcentaje_comision);
 
     // El código no se puede cambiar (está en ambas tablas)
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 0 && Object.keys(porcentajeUpdates).length === 0) {
       return NextResponse.json({ ok: false, error: "no_changes" }, { status: 400 });
     }
 
-    // Actualizar embajador
-    const { error: embajadorError } = await supabaseAdmin
-      .from("embajadores")
-      .update(updates)
-      .eq("id", id);
+    // Actualizar embajador (solo campos de embajadores)
+    if (Object.keys(updates).length > 0) {
+      const { error: embajadorError } = await supabaseAdmin
+        .from("embajadores")
+        .update(updates)
+        .eq("id", id);
 
-    if (embajadorError) {
-      console.error("[admin/embajadores] update error", embajadorError.message);
-      return NextResponse.json({ ok: false, error: "db_error", detail: embajadorError.message }, { status: 500 });
+      if (embajadorError) {
+        console.error("[admin/embajadores] update error", embajadorError.message);
+        return NextResponse.json({ ok: false, error: "db_error", detail: embajadorError.message }, { status: 500 });
+      }
     }
 
     // Si cambió el estado activo, también actualizar el código
